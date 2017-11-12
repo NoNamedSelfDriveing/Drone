@@ -42,39 +42,13 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-#define GPS_BUFF_SIZE 256
-#define NAV_POSLLH_SIZE 36
-#define NAV_POSLLH_LENGTH 28
-
+#include "gps.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-union GPS_POSLLH_DATA
-{
-  uint8_t buff[4];
-  float data;
-  int data_int;
-}posllh;
-
-int data = 0;
-
-uint8_t gps_data_temp_buff[2];
-uint8_t gps_data_buff[NAV_POSLLH_SIZE];
-uint8_t gps_rx_buff[GPS_BUFF_SIZE];
-
-int gps_posllh_data_buff[7];
-
-uint8_t CK_A = 0X00;
-uint8_t CK_B = 0x00;
-
-int gps_flag = 0;
-int gps_start_flag = 0;
-int idx = 0;
-int count = 0;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,8 +56,6 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-void gps_data_filtering();
-void gps_data_decoding();
 
 /* USER CODE END PFP */
 
@@ -95,6 +67,13 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  gps_posllh.CK_A = 0;
+  gps_posllh.CK_B = 0;
+  
+  gps_posllh.gps_flag = 0;
+  gps_posllh.gps_start_flag = 0;
+  gps_posllh.idx = 0;
+  gps_posllh.count = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -117,19 +96,19 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_USART6_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart1, gps_data_temp_buff, 1);
+  HAL_UART_Receive_IT(&huart6, gps_posllh.gps_data_receive_buff, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if(gps_flag)
+    if(gps_posllh.gps_flag)
     {
-      //gps_flag = 0;
-      gps_data_filtering();
+      read_gps_packet();
     }
     
   /* USER CODE END WHILE */
@@ -198,146 +177,19 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-void gps_data_decoding()
-{
-  int i = 0;
-  int j = 0;
-  
-  int buff_idx = 6; //6~34
-  int bit = 24;
-    
-  /*
-  gps_posllh_data_buff[0] = (gps_data_buff[6] + (gps_data_buff[7] << 8) + (gps_data_buff[8] << 16) + (gps_data_buff[9] << 24));
-  gps_posllh_data_buff[1] = (gps_data_buff[10] + (gps_data_buff[11] << 8) + (gps_data_buff[12] << 16) + (gps_data_buff[13] << 24));
-  gps_posllh_data_buff[2] = (gps_data_buff[14] + (gps_data_buff[15] << 8) + (gps_data_buff[16] << 16) + (gps_data_buff[17] << 24));
-  gps_posllh_data_buff[3] = (gps_data_buff[18] + (gps_data_buff[19] << 8) + (gps_data_buff[20] << 16) + (gps_data_buff[21] << 24));
-  gps_posllh_data_buff[4] = (gps_data_buff[22] + (gps_data_buff[23] << 8) + (gps_data_buff[24] << 16) + (gps_data_buff[25] << 24));
-  
-  for(i=0; i<5; i++)
-    printf("%4d ", gps_posllh_data_buff[i]);
 
-  printf("\r\n");
-  
-  */
-  
-  for(i=0; i<7; i++)
-  {
-    for(j=0; j<4; j++)
-    {
-      posllh.buff[j] = gps_data_buff[buff_idx++];
-    }
-    gps_posllh_data_buff[i] = posllh.data_int;
-  }
-  
-  for(i=0; i<7; i++)
-    printf("%4d ", gps_posllh_data_buff[i]);
-  
-  printf("\r\n");
-  
-  /*
-  posllh.buff[0] = gps_data_buff[6];
-  posllh.buff[1] = gps_data_buff[7];
-  posllh.buff[2] = gps_data_buff[8];
-  posllh.buff[3] = gps_data_buff[9];
-
- for(i=0; i<4; i++)
-    printf("%4X ", posllh.buff[i]);
-
- printf("%f %d",(float)data, posllh.data_int);
-  
-  
-  
-  
- 
-  
-  for(i=0; i<4; i++)
-    posllh.buff[i] = 0x00;
-  
-  posllh.data = 0.0;
-  posllh.data_int = 0;
-  /*
-  printf("\r\n");
-  printf("%f\r\n", posllh.data); 
-    */
-
-  
-  /*
-  for(i=6; i>=0; i--)
-  {
-    bit = 24;
-    
-    gps_posllh_data_buff[i] = 0;
-                            
-    for(j=0; j<4; j++)
-    {
-      gps_posllh_data_buff[i] += (gps_data_buff[buff_idx--]<< bit);
-      bit -= 8;
-    }
-    
-  }
-  */
-
-  
-  printf("\r\n");
-  
-}
-
-void gps_data_filtering()
-{
-  int i = 0;
-  int j = 0;
-  
-  for(i=0; i<GPS_BUFF_SIZE; i++)
-  {
-    if(gps_rx_buff[i] == 0xB5 && gps_rx_buff[i+1] == 0x62)
-    {
-      if(gps_rx_buff[i+2] == 0x01 && gps_rx_buff[i+3] == 0x02)
-      {
-        for(j=0; j<NAV_POSLLH_SIZE ; j++)
-        {
-          gps_data_buff[j] = gps_rx_buff[i++];
-        }
-        
-        CK_A = 0;
-        CK_B = 0;
-        
-        for(j=2; j<NAV_POSLLH_SIZE-2; j++)
-        {
-          CK_A = CK_A + gps_data_buff[j];
-          CK_B = CK_B + CK_A;
-        }
-        
-        if(CK_A != gps_data_buff[NAV_POSLLH_SIZE-2] || CK_B != gps_data_buff[NAV_POSLLH_SIZE-1])
-          continue;
-        else
-          for(j=0; j<NAV_POSLLH_SIZE ; j++)
-            printf("%4X", gps_data_buff[j]);
-                 
-        printf("%4X %4X", CK_A, CK_B);
-        printf("\r\n");
-        
-        gps_data_decoding();
-      }
-    }
-  }
-  
-  gps_flag = 0;
-  count = 1;
-  HAL_UART_Receive_IT(&huart1,gps_data_temp_buff,1);
-
-}
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 { 
-  if(!gps_flag)
-    HAL_UART_Receive_IT(&huart1,gps_data_temp_buff,1);
+  if(!gps_posllh.gps_flag)
+    HAL_UART_Receive_IT(&huart6,gps_posllh.gps_data_receive_buff,1);
   
-  gps_rx_buff[count++] = gps_data_temp_buff[0];
+  gps_posllh.gps_rx_buff[gps_posllh.count++] = gps_posllh.gps_data_receive_buff[0];
  
-  if(count == GPS_BUFF_SIZE)
+  if(gps_posllh.count == GPS_BUFF_SIZE)
   {
-    count = 0;
-    gps_flag = 1;
+    gps_posllh.count = 0;
+    gps_posllh.gps_flag = 1;
   }
 }
 
