@@ -44,8 +44,11 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
+
 #include "mti.h"
 #include "gps.h"
+//#include "sbus.h"
+    
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -54,7 +57,7 @@
 /* Private variables ---------------------------------------------------------*/
 uint16_t loop_count = 0;
 uint16_t count = 0;
-uint8_t buf[1024]; 
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -73,13 +76,16 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  gps_posllh.CK_A = 0;
-  gps_posllh.CK_B = 0;
   
-  gps_posllh.gps_flag = 0;
-  gps_posllh.gps_start_flag = 0;
-  gps_posllh.idx = 0;
-  gps_posllh.count = 0;
+  /* gps */
+//  gps_posllh.CK_A = 0;
+//  gps_posllh.CK_B = 0;
+//  
+//  gps_posllh.gps_flag = 0;
+//  gps_posllh.gps_start_flag = 0;
+//  gps_posllh.idx = 0;
+//  gps_posllh.count = 0;
+  
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -106,13 +112,18 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
-  MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim6);
   HAL_TIM_Base_Start_IT(&htim7);
-  HAL_UART_Receive_DMA(&huart1, buf, 8);
   HAL_UART_Receive_DMA(&huart3, mti_rx_buff, 8);
+  
+  /* sbus */
+//  HAL_UART_Receive_DMA(&huart1, sbus.uart_rx_receive_buff, 5);
+//  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+//  
+//  init_sbus_pwm(&htim1, TIM_CHANNEL_1);
+//  init_sbus();  
   
   /* USER CODE END 2 */
 
@@ -120,6 +131,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    /* sbus */
+//    if( IS_STACKING_BUFFER_FULL(sbus) )
+//    {
+//      make_next_decodeable_buffer();
+//      check_sbus_data_packet();
+//      decode_sbus_data();
+//    }
     
   /* USER CODE END WHILE */
 
@@ -187,6 +205,7 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+  /* 1Hz */
   if(htim->Instance == TIM7)
   {
     //printf("\r\ntest %.4d %.4d %.4d %.4d\r\n", HAL_GetTick(), loop_count, count);
@@ -194,6 +213,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     loop_count = 0;
     mti_state.count = 0;
   }
+  /* 1000Hz */
   else if(htim->Instance == TIM6)
   {
     if(mti_state.packet_rx_flag == 1)
@@ -211,17 +231,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 { 
-  if(huart == &huart1)
-  {
-    /*
-    for(int i = 0; i < 8; i++)
-    {
-      printf("%4x", buf[i]);
-    }
-    printf("\r\n");
-*/
-  }
-  else if(huart == &huart3)
+  /* sbus */
+//  if(huart == &huart1)
+//  {
+//	memcpy(sbus.uart_rx_stacking_buff+sbus.uart_rx_stacking_idx, sbus.uart_rx_receive_buff, sizeof(uint8_t)*5);
+//	sbus.uart_rx_stacking_idx += 5;
+//	
+//	//printf("%d\n\r", sbus.uart_rx_stacking_idx);
+//	//sbus.uart_rx_stacking_buff[ sbus.uart_rx_stacking_idx++ ] = sbus.uart_rx_receive_buff[0];
+//  	//HAL_UART_Receive_DMA(&huart1,sbus.uart_rx_receive_buff,8);
+//  }
+  
+  /* mti */
+  if(huart == &huart3)
   {
     receive_mti_packet();
   }

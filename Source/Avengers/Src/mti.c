@@ -64,7 +64,6 @@ void receive_mti_packet()
 }
 
 /* mti 패킷 무결성 체크 함수 */
-/* 리턴값 : 무결성 패킷 - 1, Not 무결성 패킷 - 0*/
 void check_mti_packet()
 {
   int i;

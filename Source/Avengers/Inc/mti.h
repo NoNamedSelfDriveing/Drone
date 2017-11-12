@@ -5,7 +5,8 @@
 
 #define SIZE(__BUFFER__) (sizeof(__BUFFER__)/sizeof(*(__BUFFER__)))
 
-typedef union _mti_data{
+typedef union _mti_data
+{
   uint8_t buff[76];
   float value[19];
 }MTIData;
