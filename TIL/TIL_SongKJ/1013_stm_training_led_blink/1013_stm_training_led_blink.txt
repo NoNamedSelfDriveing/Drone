@@ -1,0 +1,46 @@
+Configuration	1013_stm_training_2
+STM32CubeMX 	4.22.0
+Date	10/14/2017
+MCU	STM32L073RZTx
+
+
+
+PERIPHERALS	MODES	FUNCTIONS	PINS
+SYS	Serial_Wire	SYS_SWCLK	PA14
+SYS	Serial_Wire	SYS_SWDIO	PA13
+SYS	SysTick	SYS_VS_Systick	VP_SYS_VS_Systick
+
+
+
+Pin Nb	PINs	FUNCTIONs	LABELs
+21	PA5	GPIO_Output	GREEN_LED
+46	PA13	SYS_SWDIO	
+49	PA14	SYS_SWCLK	
+
+
+
+SOFTWARE PROJECT
+
+Project Settings : 
+Project Name : 1013_stm_training_2
+Project Folder : C:\Users\Skj\Documents\Drone\TIL\TIL_SongKJ\1013_stm_training_2
+Toolchain / IDE : MDK-ARM V5
+Firmware Package Name and Version : STM32Cube FW_L0 V1.9.0
+
+
+Code Generation Settings : 
+STM32Cube Firmware Library Package : Copy all used libraries into the project folder
+Generate peripheral initialization as a pair of '.c/.h' files per peripheral : No
+Backup previously generated files when re-generating : No
+Delete previously generated files when not re-generated : Yes
+Set all free pins as analog (to optimize the power consumption) : No
+
+
+Toolchains Settings : 
+Compiler Optimizations : Balanced Size/Speed
+
+
+
+
+
+

@@ -1,0 +1,50 @@
+Configuration	1014_stm_training_usart
+STM32CubeMX 	4.22.0
+Date	10/14/2017
+MCU	STM32L073RZTx
+
+
+
+PERIPHERALS	MODES	FUNCTIONS	PINS
+SYS	Serial_Wire	SYS_SWCLK	PA14
+SYS	Serial_Wire	SYS_SWDIO	PA13
+SYS	SysTick	SYS_VS_Systick	VP_SYS_VS_Systick
+USART2	Asynchronous	USART2_RX	PA3
+USART2	Asynchronous	USART2_TX	PA2
+
+
+
+Pin Nb	PINs	FUNCTIONs	LABELs
+16	PA2	USART2_TX	
+17	PA3	USART2_RX	
+21	PA5	GPIO_Output	LED
+46	PA13	SYS_SWDIO	
+49	PA14	SYS_SWCLK	
+
+
+
+SOFTWARE PROJECT
+
+Project Settings : 
+Project Name : 1014_stm_training_usart
+Project Folder : C:\Users\Skj\Documents\Drone\TIL\TIL_SongKJ\1014_stm_training_usart
+Toolchain / IDE : EWARM
+Firmware Package Name and Version : STM32Cube FW_L0 V1.9.0
+
+
+Code Generation Settings : 
+STM32Cube Firmware Library Package : Copy all used libraries into the project folder
+Generate peripheral initialization as a pair of '.c/.h' files per peripheral : No
+Backup previously generated files when re-generating : No
+Delete previously generated files when not re-generated : Yes
+Set all free pins as analog (to optimize the power consumption) : No
+
+
+Toolchains Settings : 
+Compiler Optimizations : Balanced Size/Speed
+
+
+
+
+
+

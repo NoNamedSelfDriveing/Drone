@@ -1,0 +1,44 @@
+Configuration	0925_pwm_tutorial
+STM32CubeMX 	4.22.0
+Date	10/14/2017
+MCU	STM32F407VETx
+
+
+
+PERIPHERALS	MODES	FUNCTIONS	PINS
+SYS	SysTick	SYS_VS_Systick	VP_SYS_VS_Systick
+TIM1	Internal Clock	TIM1_VS_ClockSourceINT	VP_TIM1_VS_ClockSourceINT
+TIM1	PWM Generation CH1	TIM1_CH1	PE9
+
+
+
+Pin Nb	PINs	FUNCTIONs	LABELs
+40	PE9	TIM1_CH1	
+
+
+
+SOFTWARE PROJECT
+
+Project Settings : 
+Project Name : 0925_pwm_tutorial
+Project Folder : C:\Users\Skj\Documents\Drone\TIL\TIL_SongKJ\0925_pwm_tutorial
+Toolchain / IDE : EWARM
+Firmware Package Name and Version : STM32Cube FW_F4 V1.16.0
+
+
+Code Generation Settings : 
+STM32Cube Firmware Library Package : Copy all used libraries into the project folder
+Generate peripheral initialization as a pair of '.c/.h' files per peripheral : No
+Backup previously generated files when re-generating : No
+Delete previously generated files when not re-generated : Yes
+Set all free pins as analog (to optimize the power consumption) : No
+
+
+Toolchains Settings : 
+Compiler Optimizations : Balanced Size/Speed
+
+
+
+
+
+

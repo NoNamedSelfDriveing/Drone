@@ -1,0 +1,59 @@
+Configuration	0924_spi_loopback
+STM32CubeMX 	4.22.0
+Date	10/14/2017
+MCU	STM32F407VETx
+
+
+
+PERIPHERALS	MODES	FUNCTIONS	PINS
+SPI2	Full-Duplex Master	SPI2_MISO	PC2
+SPI2	Full-Duplex Master	SPI2_MOSI	PC3
+SPI2	Full-Duplex Master	SPI2_SCK	PB10
+SPI3	Full-Duplex Slave	SPI3_MISO	PC11
+SPI3	Full-Duplex Slave	SPI3_MOSI	PC12
+SPI3	Full-Duplex Slave	SPI3_SCK	PC10
+SYS	Serial Wire	SYS_JTCK-SWCLK	PA14
+SYS	Serial Wire	SYS_JTMS-SWDIO	PA13
+SYS	SysTick	SYS_VS_Systick	VP_SYS_VS_Systick
+
+
+
+Pin Nb	PINs	FUNCTIONs	LABELs
+3	PE4	GPIO_Input	switch
+17	PC2	SPI2_MISO	
+18	PC3	SPI2_MOSI	
+31	PA6	GPIO_Output	led
+47	PB10	SPI2_SCK	
+72	PA13	SYS_JTMS-SWDIO	
+76	PA14	SYS_JTCK-SWCLK	
+78	PC10	SPI3_SCK	
+79	PC11	SPI3_MISO	
+80	PC12	SPI3_MOSI	
+
+
+
+SOFTWARE PROJECT
+
+Project Settings : 
+Project Name : 0924_spi_loopback
+Project Folder : C:\Users\Skj\Documents\Drone\TIL\TIL_SongKJ\0924_spi_loopback
+Toolchain / IDE : EWARM
+Firmware Package Name and Version : STM32Cube FW_F4 V1.16.0
+
+
+Code Generation Settings : 
+STM32Cube Firmware Library Package : Copy all used libraries into the project folder
+Generate peripheral initialization as a pair of '.c/.h' files per peripheral : No
+Backup previously generated files when re-generating : No
+Delete previously generated files when not re-generated : Yes
+Set all free pins as analog (to optimize the power consumption) : No
+
+
+Toolchains Settings : 
+Compiler Optimizations : Balanced Size/Speed
+
+
+
+
+
+
