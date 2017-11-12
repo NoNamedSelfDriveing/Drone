@@ -53,7 +53,8 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint16_t loop_count = 0;
-volatile uint8_t flag = 0;
+uint16_t count = 0;
+uint8_t buf[1024]; 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -105,37 +106,24 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
+  MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim7);
   HAL_TIM_Base_Start_IT(&htim6);
+  HAL_TIM_Base_Start_IT(&htim7);
+  HAL_UART_Receive_DMA(&huart1, buf, 8);
+  HAL_UART_Receive_DMA(&huart3, mti_rx_buff, 8);
   
-  HAL_UART_Receive_IT(&huart6, gps_posllh.gps_data_receive_buff, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /*
-    receive_mti_packet();
-    if(mti_rx_flag)
-    {
-      check_mti_packet();
-      if(mti_checksum_flag)
-      {
-        decode_mti();
-      }
-    }
-    */
-    if(gps_posllh.gps_flag)
-    {
-      read_gps_packet();
-    }
+    
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
   }
   /* USER CODE END 3 */
 
@@ -201,28 +189,43 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if(htim->Instance == TIM7)
   {
-    printf("\r\ntest %.4d %.4d\r\n", HAL_GetTick(), loop_count);
+    //printf("\r\ntest %.4d %.4d %.4d %.4d\r\n", HAL_GetTick(), loop_count, count);
+    printf("%d\r\n", mti_state.count);
     loop_count = 0;
+    mti_state.count = 0;
   }
   else if(htim->Instance == TIM6)
   {
+    if(mti_state.packet_rx_flag == 1)
+    {
+      check_mti_packet();
+      if(mti_state.checksum_flag == 1)
+      {
+        decode_mti_packet();
+        mti_state.count++;
+      }
+    }  
     loop_count++;
-    flag = 1;
   }
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 { 
-  if(!gps_posllh.gps_flag)
-    HAL_UART_Receive_IT(&huart6,gps_posllh.gps_data_receive_buff,1);
-  
-  gps_posllh.gps_rx_buff[gps_posllh.count++] = gps_posllh.gps_data_receive_buff[0];
- 
-  if(gps_posllh.count == GPS_BUFF_SIZE)
+  if(huart == &huart1)
   {
-    gps_posllh.count = 0;
-    gps_posllh.gps_flag = 1;
+    /*
+    for(int i = 0; i < 8; i++)
+    {
+      printf("%4x", buf[i]);
+    }
+    printf("\r\n");
+*/
   }
+  else if(huart == &huart3)
+  {
+    receive_mti_packet();
+  }
+  
 }
 
 #ifdef __GNUC__
