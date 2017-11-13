@@ -49,15 +49,10 @@ I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-#define I2C_TIMEOUT_FLAG 35U     
-#define COUNTOF(__BUFFER__) (sizeof(__BUFFER__) / sizeof(*(__BUFFER__)))
-#define BUFFERSIZE (COUNTOF(TxBuffer) - 1)
-#define address 0x76 << 1
+#define address 0x76 << 1 // address in datasheet and shift left
 
-//uint16_t Daddress = 0x76;
-uint8_t Txbuffer[1] = {0,};
-uint8_t Rxbuffer[4];
-uint16_t value;
+uint8_t buffer[4]; 
+uint16_t value; 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,12 +98,6 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   
-  //Txbuffer[0] = 0x1E; // reset command
-  
-  //HAL_I2C_Master_Transmit(&hi2c1, 0x76 << 1, Txbuffer , 1 , 100);
-  //HAL_Delay(20);
-  //HAL_I2C_Master_Receive(&hi2c1, Daddress << 1, Txbuffer , 2, I2C_TIMEOUT_FLAG);
-  //HAL_Delay(20);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -119,36 +108,36 @@ int main(void)
 
   /* USER CODE BEGIN 3 */
   
-  Rxbuffer[0] = 0xA6; //read memory address
-  Rxbuffer[1] = 0;
-  Rxbuffer[2] = 0;
-  Rxbuffer[3] = 0;
-  HAL_I2C_Master_Transmit(&hi2c1, address, Rxbuffer , 2 ,100);
+  buffer[0] = 0xA6; //read memory address
+  buffer[1] = 0;
+  buffer[2] = 0;
+  buffer[3] = 0;
+  HAL_I2C_Master_Transmit(&hi2c1, address, buffer , 2 ,100); // 2 = datasize 100 = timeout
   
   //HAL_Delay(30);
   //respond
-  HAL_I2C_Master_Receive(&hi2c1, address, Rxbuffer , 3 ,100);
+  HAL_I2C_Master_Receive(&hi2c1, address, buffer , 3 ,100);
 
 
   HAL_Delay(400);
   
-  Rxbuffer[0] = 0x48; //Pressure conversion command
-  HAL_I2C_Master_Transmit(&hi2c1, address, Rxbuffer , 2 ,100);
+  buffer[0] = 0x48; //Pressure conversion command
+  HAL_I2C_Master_Transmit(&hi2c1, address, buffer , 2 ,100);
   
  
   HAL_Delay(400);
   
-  Rxbuffer[0] = 0x00; //ADC read command 
-  HAL_I2C_Master_Transmit(&hi2c1, address , Rxbuffer , 2 ,100);
+  buffer[0] = 0x00; //ADC read command 
+  HAL_I2C_Master_Transmit(&hi2c1, address , buffer , 2 ,100);
   
   HAL_Delay(400);
   
-  HAL_I2C_Master_Receive(&hi2c1, address , Rxbuffer , 4, 100);
+  HAL_I2C_Master_Receive(&hi2c1, address , buffer , 4, 100);
   
   
   //HAL_Delay(20);
   
-  value = Rxbuffer[0] << 8| Rxbuffer[1];
+  value = buffer[0] << 8| buffer[1]; // make 16 bit
   HAL_Delay(100);
   }
   /* USER CODE END 3 */
