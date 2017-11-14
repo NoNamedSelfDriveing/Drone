@@ -51,15 +51,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 
+extern SBUS sbus;
+extern SBUS_pwm sbus_pwm;
+
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-
-/* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
@@ -101,23 +98,31 @@ int main(void)
   MX_TIM1_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_DMA(&huart1, sbus.uart_rx_receive_buff, 5);
+  HAL_UART_Receive_DMA(&huart1, sbus.uart_rx_receive_buff, DMA_RECEIVE_SIZE);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   
-  init_sbus_pwm(&htim1, TIM_CHANNEL_1);
+  init_sbus_pwm();
   init_sbus();  
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   
   while (1)
-  {
-	if( IS_STACKING_BUFFER_FULL(sbus) )
-    {
-	    make_next_decodeable_buffer();
+  {	
+	if(sbus.rx_flag){
+		memcpy(sbus.uart_rx_stacking_buff+sbus.uart_rx_stacking_idx, sbus.uart_rx_receive_buff, sizeof(uint8_t)*DMA_RECEIVE_SIZE);
+		sbus.uart_rx_stacking_idx += DMA_RECEIVE_SIZE;
+		sbus.rx_flag = 0;
+	}
+	  
+	if( IS_STACKING_BUFFER_FULL() )
+	{
+	  make_next_decodeable_buffer();
       check_sbus_data_packet();
-      decode_sbus_data();
+	  decode_sbus_data();
+	  //make_sbus_pwm_with_value(&htim1, TIM_CHANNEL_1, value);
     }
   }
   /* USER CODE END WHILE */
@@ -132,7 +137,6 @@ int main(void)
 */
 void SystemClock_Config(void)
 {
-
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
 
@@ -189,12 +193,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 { 
   if(huart == &huart1)
   {
-	memcpy(sbus.uart_rx_stacking_buff+sbus.uart_rx_stacking_idx, sbus.uart_rx_receive_buff, sizeof(uint8_t)*5);
-	sbus.uart_rx_stacking_idx += 5;
-	
-	//printf("%d\n\r", sbus.uart_rx_stacking_idx);
-	//sbus.uart_rx_stacking_buff[ sbus.uart_rx_stacking_idx++ ] = sbus.uart_rx_receive_buff[0];
-  	//HAL_UART_Receive_DMA(&huart1,sbus.uart_rx_receive_buff,8);
+	sbus.rx_flag = 1;
   }
 }
 
