@@ -53,6 +53,7 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint16_t loop_counter;
+int count = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -100,9 +101,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim6);
   HAL_TIM_Base_Start_IT(&htim7);
-  HAL_UART_Receive_DMA(&huart6, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
   gps_posllh_init();
-  
+  HAL_UART_Receive_DMA(&huart6, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -179,72 +179,22 @@ void SystemClock_Config(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   int i = 0;
-
+  
+#if 0
+  for(i=0; i<8; i++)
+  {
+    if(gps_posllh.data_dma_receive_buff[i] == 0xB5 && gps_posllh.data_dma_receive_buff[i+1] == 0x62 )
+      printf("\r\n\r\n");
+    
+    printf("%4X ", gps_posllh.data_dma_receive_buff[i]);
+  }
+#endif
+  
   if(huart->Instance == USART6)
   {
-    if(gps_posllh.check_byte == 1)
-    {
-      if(gps_posllh.data_dma_receive_buff[gps_posllh.start_packet_idx] == 0xB5 && gps_posllh.data_dma_receive_buff[gps_posllh.start_packet_idx+1] == 0x62)
-      {
-        if(gps_posllh.data_dma_receive_buff[gps_posllh.start_packet_idx+2] == 0x01 && gps_posllh.data_dma_receive_buff[gps_posllh.start_packet_idx+3] == 0x02)
-        {
-          gps_posllh.packet_complete_flag = 1;
-          gps_posllh.check_byte = 0;
-        }
-      }
-    }
-    
-    /** Check dma_receive_buff... **/
-    for(i=0; i<RECEIVE_BUFF_SIZE; i++)
-    {
-      if(gps_posllh.data_dma_receive_buff[i] == 0XB5)
-      {
-        switch(7-i)
-        {
-        case 0: // i = 7
-            gps_posllh.check_byte = 1;
-            gps_posllh.start_packet_idx = gps_posllh.rx_buff_idx + i;
-          
-          break;
-          
-        case 1: // i = 6
-          if(gps_posllh.data_dma_receive_buff[i+1] == 0x62) 
-          {
-            gps_posllh.check_byte = 1;
-            gps_posllh.start_packet_idx = gps_posllh.rx_buff_idx + i;
-          }
-          
-          break;
-          
-        case 2: // i= 5
-          if(gps_posllh.data_dma_receive_buff[i+1] == 0x62 && gps_posllh.data_dma_receive_buff[i+2] == 0x01)
-          {
-            gps_posllh.start_packet_idx = gps_posllh.rx_buff_idx + i;
-            gps_posllh.check_byte = 1;
-          }
-                 
-          break;
-          
-        case 3: // i = 4
-          if(gps_posllh.data_dma_receive_buff[i+1] == 0x62 && gps_posllh.data_dma_receive_buff[i+2] == 0x01 && gps_posllh.data_dma_receive_buff[i+3] == 0x02)
-          {
-            gps_posllh.packet_complete_flag = 1;
-            gps_posllh.check_byte = 0;
-            gps_posllh.start_packet_idx = gps_posllh.rx_buff_idx + i;
-          }
-          
-          break;        
-        }
-      }
-    }
-
-    memcpy(gps_posllh.data_rx_buff+gps_posllh.rx_buff_idx, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
-  
-    if(gps_posllh.rx_buff_idx >= GPS_BUFF_SIZE)
-      gps_posllh.rx_buff_idx = 0;
-    
-    gps_posllh.rx_buff_idx += RECEIVE_BUFF_SIZE;
+    check_gps_packet();
   }
+
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -258,11 +208,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
     if(gps_posllh.packet_complete_flag == 1)
     {
-      gps_posllh.packet_complete_flag = 0;
-      
-      if(calculate_check_sum() == 1)
-        decode_gps_posllh_packet();
+      gps_posllh.check_byte = -1;
+      //check_sum()
     }
+    
   }
 }
 
