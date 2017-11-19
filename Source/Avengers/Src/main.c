@@ -39,14 +39,15 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 #include "dma.h"
+#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
 #include "mti.h"
 #include "gps.h"
+#include "gy63.h"
 //#include "sbus.h"
     
 /* USER CODE END Includes */
@@ -112,12 +113,13 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
+  MX_I2C1_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim6);
   HAL_TIM_Base_Start_IT(&htim7);
   HAL_UART_Receive_DMA(&huart3, mti_rx_buff, 8);
-  
+ 
   /* sbus */
 //  HAL_UART_Receive_DMA(&huart1, sbus.uart_rx_receive_buff, 5);
 //  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
@@ -131,6 +133,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    get_gy63_calibration_data();
+    get_altitude();
     /* sbus */
 //    if( IS_STACKING_BUFFER_FULL(sbus) )
 //    {
