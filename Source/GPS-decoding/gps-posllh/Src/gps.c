@@ -10,7 +10,7 @@ void gps_posllh_init()
   
   gps_posllh.rx_buff_idx = 0;
   gps_posllh.check_byte = -1;
-  gps_posllh.read_rx_pause = 0;
+  gps_posllh.read_rx_pause = -1;
   gps_posllh.packet_complete_flag = 0;
   gps_posllh.check_sum_complete_flag = 0;
 }
@@ -26,39 +26,55 @@ void check_gps_packet()
   gps_posllh.rx_buff_idx += RECEIVE_BUFF_SIZE;
   
   
-  if(gps_posllh.read_rx_pause == 1)
-  {
-    gps_posllh.read_rx_pause = 0;
+  if(gps_posllh.read_rx_pause > 0 && gps_posllh.read_rx_pause <= 4)
+  {    
+    gps_posllh.read_rx_pause--;
     
-    memcpy(gps_posllh.posllh_rx_data_buff + gps_posllh.posllh_buff_idx, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE - gps_posllh.posllh_buff_idx);
-    gps_posllh.packet_complete_flag = 1;
-    gps_posllh.posllh_buff_idx = 0;
+    memcpy(gps_posllh.posllh_rx_data_buff + gps_posllh.posllh_buff_idx, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
     
+    gps_posllh.posllh_buff_idx += RECEIVE_BUFF_SIZE;
+    
+    if(gps_posllh.read_rx_pause == 0)
+    {
+      gps_posllh.read_rx_pause = -1;
+      gps_posllh.posllh_buff_idx = 0;
+      gps_posllh.packet_complete_flag = 1;
+    }
   }
   
-  for(i=0; i<RECEIVE_BUFF_SIZE; i++)
+  if(gps_posllh.read_rx_pause == -1)
   {
-    if(gps_posllh.data_dma_receive_buff[i] == 0xB5 && gps_posllh.data_dma_receive_buff[i+1] == 0x62)
-    {
-      if(gps_posllh.data_dma_receive_buff[i+2] == 0x01 && gps_posllh.data_dma_receive_buff[i+3] == 0x02)
+    for(i=0; i<RECEIVE_BUFF_SIZE; i++)
+    {     
+      if(gps_posllh.data_dma_receive_buff[i] == 0xB5 && gps_posllh.data_dma_receive_buff[i+1] == 0x62)
       {
-        
-        if(i + NAV_POSLLH_SIZE < RECEIVE_BUFF_SIZE)
+        if(gps_posllh.data_dma_receive_buff[i+2] == 0x01 && gps_posllh.data_dma_receive_buff[i+3] == 0x02)
         {
-          memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.data_dma_receive_buff + i, RECEIVE_BUFF_SIZE);
-          gps_posllh.packet_complete_flag = 1;
-          gps_posllh.posllh_buff_idx = 0;
-          break;
+          gps_posllh.read_rx_pause = 4;
+          
+          memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.data_dma_receive_buff + i, RECEIVE_BUFF_SIZE-i);
+          gps_posllh.posllh_buff_idx = RECEIVE_BUFF_SIZE-i;
+          
+          /*
+          if(i + NAV_POSLLH_SIZE < RECEIVE_BUFF_SIZE)
+          {
+            memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.data_dma_receive_buff + i, RECEIVE_BUFF_SIZE);
+            gps_posllh.packet_complete_flag = 1;
+            gps_posllh.posllh_buff_idx = 0;
+            break;
+          }
+          else
+          {
+            gps_posllh.read_rx_pause = 1;
+            gps_posllh.posllh_buff_idx = RECEIVE_BUFF_SIZE - i;
+          }
+          */
+          
         }
-        else
-        {
-          gps_posllh.read_rx_pause = 1;
-          gps_posllh.posllh_buff_idx = RECEIVE_BUFF_SIZE - i;
-        }
-        
       }
     }
   }
+  
   
 }
 
