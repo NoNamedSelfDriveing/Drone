@@ -109,6 +109,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    
   }
   /* USER CODE END WHILE */
 
@@ -178,28 +179,18 @@ void SystemClock_Config(void)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  int i = 0;
-  
-#if 0
-  for(i=0; i<8; i++)
-  {
-    if(gps_posllh.data_dma_receive_buff[i] == 0xB5 && gps_posllh.data_dma_receive_buff[i+1] == 0x62 )
-      printf("\r\n\r\n");
-    
-    printf("%4X ", gps_posllh.data_dma_receive_buff[i]);
-  }
-#endif
-  
+
+#if 1
   if(huart->Instance == USART6)
   {
     check_gps_packet();
   }
-
+#endif
+  
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  
   if(htim->Instance==TIM7){
     printf("test %.4d %.4d\r\n",HAL_GetTick(),loop_counter);
     loop_counter = 0;
@@ -208,8 +199,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
     if(gps_posllh.packet_complete_flag == 1)
     {
-      gps_posllh.check_byte = -1;
-      //check_sum()
+      gps_posllh.posllh_buff_idx = 0;
+      gps_posllh.packet_complete_flag = 0;
+      
+      calculate_gps_check_sum();
+    }
+    
+    if(gps_posllh.check_sum_complete_flag == 1)
+    {
+      gps_posllh.check_sum_complete_flag = 0;
+      
+      decode_gps_posllh_packet();
+      loop_counter++;
     }
     
   }

@@ -5,6 +5,7 @@
 #include "usart.h"
 #include "gpio.h"
 #include "math.h"
+#include "string.h"
 
 #define RECEIVE_BUFF_SIZE 8
 #define GPS_BUFF_SIZE 1024
@@ -35,7 +36,7 @@ typedef union _GPS_POSLLH_UNION
 
 typedef struct _GPS_POSLLH
 {
-  uint8_t       data_dma_receive_buff[8];
+  uint8_t       data_dma_receive_buff[RECEIVE_BUFF_SIZE];
   uint8_t       posllh_rx_data_buff[GPS_BUFF_SIZE];
   uint8_t       rx_data_buff[GPS_BUFF_SIZE];
   
