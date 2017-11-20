@@ -51,12 +51,19 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-extern SBUS sbus;
-extern SBUS_pwm sbus_pwm;
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
+extern SBUS sbus;
+extern SBUS_pwm sbus_pwm;
+uint16_t number = 0;
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+
+/* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
@@ -96,10 +103,15 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_TIM1_Init();
+  MX_TIM7_Init();
+  MX_TIM6_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_DMA(&huart1, sbus.uart_rx_receive_buff, DMA_RECEIVE_SIZE);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  
+  HAL_TIM_Base_Start_IT(&htim6);
+  HAL_TIM_Base_Start_IT(&htim7);
   
   init_sbus_pwm();
   init_sbus();  
@@ -111,19 +123,7 @@ int main(void)
   
   while (1)
   {	
-	if(sbus.rx_flag){
-		memcpy(sbus.uart_rx_stacking_buff+sbus.uart_rx_stacking_idx, sbus.uart_rx_receive_buff, sizeof(uint8_t)*DMA_RECEIVE_SIZE);
-		sbus.uart_rx_stacking_idx += DMA_RECEIVE_SIZE;
-		sbus.rx_flag = 0;
-	}
-	  
-	if( IS_STACKING_BUFFER_FULL() )
-	{
-	  make_next_decodeable_buffer();
-      check_sbus_data_packet();
-	  decode_sbus_data();
-	  //make_sbus_pwm_with_value(&htim1, TIM_CHANNEL_1, value);
-    }
+	// Pretty Clean!
   }
   /* USER CODE END WHILE */
 
@@ -137,6 +137,7 @@ int main(void)
 */
 void SystemClock_Config(void)
 {
+
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
 
@@ -167,7 +168,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV8;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
@@ -193,7 +194,25 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 { 
   if(huart == &huart1)
   {
-	sbus.rx_flag = 1;
+	memcpy(sbus.uart_rx_stacking_buff+sbus.uart_rx_stacking_idx, sbus.uart_rx_receive_buff, sizeof(uint8_t)*DMA_RECEIVE_SIZE);
+	sbus.uart_rx_stacking_idx += DMA_RECEIVE_SIZE;
+  }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
+  if(htim->Instance == htim6.Instance){  	
+	if( IS_STACKING_BUFFER_FULL() )
+	{
+	  make_next_decodeable_buffer();
+      check_sbus_data_packet();
+	  decode_sbus_data();
+	  number++;
+	  //make_sbus_pwm_with_value(&htim1, TIM_CHANNEL_1, value);   :    Make PWM Signal
+    }
+  
+  }else if(htim->Instance == htim7.Instance){
+	printf("htim7 : %d\n\r", number);
+	number = 0;
   }
 }
 
