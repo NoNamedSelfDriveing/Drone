@@ -1,7 +1,7 @@
 /**********************************************************************
  *     sbus.h                                                         *
  *     written by Soomin Lee (MagmaTart)                              *
- *     Last modify date : 2017.11.14                                  *
+ *     Last modify date : 2017.11.20                                  *
  *     Description : Structures and Functions to use SBUS protocol.   *
  **********************************************************************/
 
@@ -28,10 +28,7 @@ typedef struct _SBUS_PWM
   float min_pwm;
   float max_pwm;
   float min_duty;
-  float max_duty;
-  
-  float F_dutyCycle;
-  uint16_t DutyCycle; 
+  float max_duty; 
 }SBUS_pwm;
 
 typedef struct _SBUS

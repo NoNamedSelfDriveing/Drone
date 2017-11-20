@@ -106,20 +106,18 @@ void decode_sbus_data()
     sbus.data_buff[row_index][5] = (uint16_t)((sbus.uart_rx_buff[row_index][7]&0x80)>>7) + (uint16_t)(sbus.uart_rx_buff[row_index][8]<<1) + (uint16_t)((sbus.uart_rx_buff[row_index][9]&0x03)<<9);
     sbus.data_buff[row_index][6] = (uint16_t)((sbus.uart_rx_buff[row_index][9]&0xfc)>>2) + (uint16_t)((sbus.uart_rx_buff[row_index][10]&0x1f)<<6);
   }
-  printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\r", sbus.data_buff[0][0], sbus.data_buff[0][1], sbus.data_buff[0][2], sbus.data_buff[0][3], sbus.data_buff[0][4], sbus.data_buff[0][5], sbus.data_buff[0][6]);
+  //printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\r", sbus.data_buff[0][0], sbus.data_buff[0][1], sbus.data_buff[0][2], sbus.data_buff[0][3], sbus.data_buff[0][4], sbus.data_buff[0][5], sbus.data_buff[0][6]);
 }
 
 void sbus_pwm_make_with_value(TIM_HandleTypeDef * htim, uint32_t channel, uint16_t F_value){
  //F_dutyCycle : (((value - 352)/ 1344) * 100 * 0.05) + 7
  uint16_t pulse;
  
- sbus_pwm.F_dutyCycle = ((F_value - 352) * 5.5 / 1344) +7;
- pulse = (((64499 + 1) * sbus_pwm.F_dutyCycle) / 100) - 1;
+ pulse = F_value / ((sbus_pwm.max_pwm - sbus_pwm.min_pwm) / (sbus_pwm.max_duty - sbus_pwm.min_duty)) + 3696;
  
- sbus_pwm.DutyCycle = pulse;
- __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, sbus_pwm.DutyCycle);
+ __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, pulse);
   
- htim -> Instance -> CCR1 = sbus_pwm.DutyCycle;
+ htim -> Instance -> CCR1 = pulse;
  
  //printf("%.4d %.4d %.3d \r\n", F_value, sbus_pwm.DutyCycle, sbus_pwm.F_dutyCycle);
 }
