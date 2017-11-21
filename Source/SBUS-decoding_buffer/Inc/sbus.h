@@ -24,14 +24,12 @@
 
 typedef struct _SBUS_PWM
 {
-  float pwm;
+  float pwm[4];
   float min_pwm;
   float max_pwm;
   float min_duty;
   float max_duty;
-  
-  float F_dutyCycle;
-  uint16_t DutyCycle; 
+
 }SBUS_pwm;
 
 typedef struct _SBUS

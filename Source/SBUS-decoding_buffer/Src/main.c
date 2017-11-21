@@ -51,12 +51,15 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-extern SBUS sbus;
-extern SBUS_pwm sbus_pwm;
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+
+/* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
@@ -137,6 +140,7 @@ int main(void)
 */
 void SystemClock_Config(void)
 {
+
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
 

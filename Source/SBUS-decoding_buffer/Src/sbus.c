@@ -109,17 +109,22 @@ void decode_sbus_data()
   printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\r", sbus.data_buff[0][0], sbus.data_buff[0][1], sbus.data_buff[0][2], sbus.data_buff[0][3], sbus.data_buff[0][4], sbus.data_buff[0][5], sbus.data_buff[0][6]);
 }
 
-void sbus_pwm_make_with_value(TIM_HandleTypeDef * htim, uint32_t channel, uint16_t F_value){
- //F_dutyCycle : (((value - 352)/ 1344) * 100 * 0.05) + 7
- uint16_t pulse;
+void sbus_pwm_make_with_value(){
+  //pwm = value / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696
+  int i;
+  int pulse[4];
+  uint16_t pulse;
  
- sbus_pwm.F_dutyCycle = ((F_value - 352) * 5.5 / 1344) +7;
- pulse = (((64499 + 1) * sbus_pwm.F_dutyCycle) / 100) - 1;
- 
- sbus_pwm.DutyCycle = pulse;
- __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, sbus_pwm.DutyCycle);
+  for (i = 0; i < 4; i++) 
+  {
+	pulse[i] = sbus.data_buff[0][i] / ((sbus_pwm.max_pwm - sbus_pwm.min_pwm) / (sbus_pwm.max_duty - sbus_pwm.min_duty)) + 3696;
+	sbus_pwm.pwm[i] = pulse[i];
+  }
   
- htim -> Instance -> CCR1 = sbus_pwm.DutyCycle;
- 
- //printf("%.4d %.4d %.3d \r\n", F_value, sbus_pwm.DutyCycle, sbus_pwm.F_dutyCycle);
+  htim1.Instance -> CCR1 = subs_pwm.pwm[0];
+  htim1.Instance -> CCR2 = subs_pwm.pwm[1];
+  htim1.Instance -> CCR3 = subs_pwm.pwm[2];
+  htim1.Instance -> CCR4 = subs_pwm.pwm[3];
+
+  //printf("%.4d %.4d %.3d \r\n", F_value, sbus_pwm.DutyCycle, sbus_pwm.F_dutyCycle);
 }
