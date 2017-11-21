@@ -24,7 +24,7 @@
 
 typedef struct _SBUS_PWM
 {
-  float pwm;
+  float pwm[4];
   float min_pwm;
   float max_pwm;
   float min_duty;
@@ -69,7 +69,7 @@ void check_sbus_data_packet();
 void decode_sbus_data();
 
 // make pwm signal based on sbus data
-void sbus_pwm_make_with_value(TIM_HandleTypeDef*, uint32_t, uint16_t F_value);
+void sbus_pwm_make_with_value();
 
 //extern SBUS sbus;
 //extern SBUS_pwm sbus_pwm;

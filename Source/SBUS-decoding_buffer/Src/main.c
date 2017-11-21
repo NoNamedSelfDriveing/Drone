@@ -207,7 +207,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
       check_sbus_data_packet();
 	  decode_sbus_data();
 	  number++;
-	  //make_sbus_pwm_with_value(&htim1, TIM_CHANNEL_1, value);   :    Make PWM Signal
+	  //make_sbus_pwm_with_value();   :    Make PWM Signal
     }
   
   }else if(htim->Instance == htim7.Instance){
