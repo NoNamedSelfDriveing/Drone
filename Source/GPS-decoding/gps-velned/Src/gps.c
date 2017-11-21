@@ -9,10 +9,7 @@ void read_gps_packet()
   int j = 0;
   int k = 0;
    
-  int temp = 0;
-  int float_temp = 0.0;
-  
-  int buff_idx = 34; // 6 ~ 34
+  int buff_idx = 6; // 6 ~ 42
   
   for(i=0; i<GPS_BUFF_SIZE; i++)
   {
