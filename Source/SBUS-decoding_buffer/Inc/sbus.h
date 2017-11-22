@@ -12,11 +12,13 @@
 
 #define COUNTOF(__BUFFER__) (sizeof(__BUFFER__)/sizeof(*(__BUFFER__)))
 #define BUFFERSIZE(buffer) (COUNTOF(buffer))
-#define IS_STACKING_BUFFER_FULL() (sbus.uart_rx_stacking_idx>=25)
+#define COPY_TO_STACK() memcpy(sbus.uart_rx_stacking_buff+sbus.uart_rx_stacking_idx, sbus.uart_rx_receive_buff, sizeof(uint8_t)*ndtr)
+#define SHOULD_CHECK_BYTE_OK() sbus.uart_rx_stacking_buff[sbus.uart_rx_stacking_idx-25] == START_BYTE && sbus.uart_rx_stacking_buff[sbus.uart_rx_stacking_idx-1] % 16 == END_BYTE
+#define IS_NOT_NEXT_CIRCLE() (huart1.hdmarx->Instance->NDTR > 24)
 
 #define SBUS_DATA_SIZE 23
 #define UART_DATA_SIZE 25
-#define DMA_RECEIVE_SIZE 5
+#define DMA_RECEIVE_SIZE 25
 #define STACKING_SIZE 250
 #define ROW_SIZE 10
 #define START_BYTE 0x0f
@@ -24,7 +26,7 @@
 
 typedef struct _SBUS_PWM
 {
-  float pwm[4];
+  float pwm;
   float min_pwm;
   float max_pwm;
   float min_duty;
@@ -33,7 +35,7 @@ typedef struct _SBUS_PWM
 
 typedef struct _SBUS
 {
-  uint8_t         uart_rx_receive_buff[10];
+  uint8_t         uart_rx_receive_buff[DMA_RECEIVE_SIZE];
   uint8_t         uart_rx_stacking_buff[STACKING_SIZE];
   uint8_t         uart_rx_decoding_buff[STACKING_SIZE];
   uint8_t         remained_after_decoding[STACKING_SIZE];
@@ -49,8 +51,6 @@ typedef struct _SBUS
   
   volatile        uint8_t rx_flag;
   volatile        uint8_t start_flag;
-
-  SBUS_pwm sbus_pwm;
 }SBUS;
 
 void SystemClock_Config(void);
@@ -69,7 +69,7 @@ void check_sbus_data_packet();
 void decode_sbus_data();
 
 // make pwm signal based on sbus data
-void sbus_pwm_make_with_value();
+void sbus_pwm_make_with_value(TIM_HandleTypeDef*);
 
 //extern SBUS sbus;
 //extern SBUS_pwm sbus_pwm;
