@@ -21,10 +21,11 @@ void init_sbus_pwm(){
   sbus_pwm.max_duty = 8126;
   sbus_pwm.max_pwm = 1696;
   sbus_pwm.min_pwm = 352;
+  sbus_pwm.pwm = 0;
 }
 
 void init_sbus(){
-  sbus.sbus_pwm = sbus_pwm;
+  //sbus.sbus_pwm = sbus_pwm;
 
   sbus.uart_rx_stacking_idx = 0;
   sbus.sb_index_saver = 0;
@@ -87,7 +88,7 @@ void check_sbus_data_packet()
 
   memcpy(sbus.remained_after_decoding, sbus.uart_rx_decoding_buff + sb_index, sizeof(uint8_t) * (STACKING_SIZE - sb_index)); 
   memset(sbus.uart_rx_decoding_buff, 0, sizeof(uint8_t)*STACKING_SIZE);
-
+  
   sbus.uart_rx_row_idx = uart_rx_row_index;
   sbus.sb_index_saver = (STACKING_SIZE - sb_index);
 }
@@ -105,23 +106,19 @@ void decode_sbus_data()
     sbus.data_buff[row_index][5] = (uint16_t)((sbus.uart_rx_buff[row_index][7]&0x80)>>7) + (uint16_t)(sbus.uart_rx_buff[row_index][8]<<1) + (uint16_t)((sbus.uart_rx_buff[row_index][9]&0x03)<<9);
     sbus.data_buff[row_index][6] = (uint16_t)((sbus.uart_rx_buff[row_index][9]&0xfc)>>2) + (uint16_t)((sbus.uart_rx_buff[row_index][10]&0x1f)<<6);
   }
-  //printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\r", sbus.data_buff[0][0], sbus.data_buff[0][1], sbus.data_buff[0][2], sbus.data_buff[0][3], sbus.data_buff[0][4], sbus.data_buff[0][5], sbus.data_buff[0][6]);
+  printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\r", sbus.data_buff[0][0], sbus.data_buff[0][1], sbus.data_buff[0][2], sbus.data_buff[0][3], sbus.data_buff[0][4], sbus.data_buff[0][5], sbus.data_buff[0][6]);
 }
 
-void sbus_pwm_make_with_value(){
- //pwm = value / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696
+void sbus_pwm_make_with_value(TIM_HandleTypeDef * htim){
   int i;
   uint16_t pulse[4];
  
   for(i = 0; i < 4; i++){
     pulse[i] = sbus.data_buff[0][i] / ((sbus_pwm.max_pwm - sbus_pwm.min_pwm) / (sbus_pwm.max_duty - sbus_pwm.min_duty)) + 3696; 
-    sbus.sbus_pwm[i] = pulse[i];
   }
   
-  htim1 -> Instance -> CCR1 = pulse[0];
-  htim1 -> Instance -> CCR2 = pulse[1];
-  htim1 -> Instance -> CCR3 = pulse[2];
-  htim1 -> Instance -> CCR4 = pulse[3];
- 
- //printf("%.4d %.4d %.3d \r\n", F_value, sbus_pwm.DutyCycle, sbus_pwm.F_dutyCycle);
+  htim -> Instance -> CCR1 = pulse[0];
+  htim -> Instance -> CCR2 = pulse[1];
+  htim -> Instance -> CCR3 = pulse[2];
+  htim -> Instance -> CCR4 = pulse[3];
 }

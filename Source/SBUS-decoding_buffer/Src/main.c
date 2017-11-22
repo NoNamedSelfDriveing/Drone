@@ -122,8 +122,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   
   while (1)
-  {	
-	// Pretty Clean!
+  {
+	
   }
   /* USER CODE END WHILE */
 
@@ -190,26 +190,27 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{ 
-  if(huart == &huart1)
-  {
-	memcpy(sbus.uart_rx_stacking_buff+sbus.uart_rx_stacking_idx, sbus.uart_rx_receive_buff, sizeof(uint8_t)*DMA_RECEIVE_SIZE);
-	sbus.uart_rx_stacking_idx += DMA_RECEIVE_SIZE;
-  }
-}
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
-  if(htim->Instance == htim6.Instance){  	
-	if( IS_STACKING_BUFFER_FULL() )
-	{
-	  make_next_decodeable_buffer();
-      check_sbus_data_packet();
-	  decode_sbus_data();
-	  number++;
-	  //make_sbus_pwm_with_value();   :    Make PWM Signal
-    }
+  uint16_t ndtr;
   
+  if(htim->Instance == htim6.Instance){  	
+	ndtr = huart1.hdmarx->Instance->NDTR;
+	
+	// Is DMA receive buffer full
+	if(ndtr > 24){
+	  COPY_TO_STACK();
+	  while(IS_NOT_NEXT_CIRCLE());		// Wait for start next circle of DMA
+	  sbus.uart_rx_stacking_idx += ndtr;
+	  
+	  // Check start byte and end byte
+	  if(SHOULD_CHECK_BYTE_OK()){
+		make_next_decodeable_buffer();
+        check_sbus_data_packet();
+	    decode_sbus_data();
+	    number++;
+	  }
+	}
+	
   }else if(htim->Instance == htim7.Instance){
 	printf("htim7 : %d\n\r", number);
 	number = 0;
