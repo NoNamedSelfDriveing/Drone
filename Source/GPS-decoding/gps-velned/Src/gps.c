@@ -18,7 +18,7 @@ void read_gps_packet()
       if(gps_velned.gps_rx_buff[i+2] == 0x01 && gps_velned.gps_rx_buff[i+3] == 0x12)
       {
        
-        for(j=0; j<NAV_VELNED_SIZE ; j++)
+        for(j=0; j<NAV_VELNED_SIZE; j++)
         {
           gps_velned.gps_data_buff[j] = gps_velned.gps_rx_buff[i++];
         }
