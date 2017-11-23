@@ -1,7 +1,7 @@
 /**********************************************************************
  *     sbus.h                                                         *
  *     written by Soomin Lee (MagmaTart)                              *
- *     Last modify date : 2017.11.20                                  *
+ *     Last modify date : 2017.11.23                                  *
  *     Description : Structures and Functions to use SBUS protocol.   *
  **********************************************************************/
 
