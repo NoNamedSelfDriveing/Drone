@@ -10,7 +10,7 @@ void gps_posllh_init()
   
   gps_posllh.rx_buff_idx = 0;
   gps_posllh.check_byte = -1;
-  gps_posllh.read_rx_pause = -1;
+  gps_posllh.read_rx_pause = 0;
   gps_posllh.packet_complete_flag = 0;
   gps_posllh.check_sum_complete_flag = 0;
 }
@@ -18,64 +18,31 @@ void gps_posllh_init()
 void check_gps_packet()
 {
   int i = 0;
+  int index = 0;
   
-  if(gps_posllh.rx_buff_idx > GPS_BUFF_SIZE || gps_posllh.rx_buff_idx < 0 )
-    gps_posllh.rx_buff_idx = 0;
-    
-  memcpy(gps_posllh.rx_data_buff + gps_posllh.rx_buff_idx, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
-  gps_posllh.rx_buff_idx += RECEIVE_BUFF_SIZE;
-  
-  
-  if(gps_posllh.read_rx_pause > 0 && gps_posllh.read_rx_pause <= 4)
-  {    
-    gps_posllh.read_rx_pause--;
-    
-    memcpy(gps_posllh.posllh_rx_data_buff + gps_posllh.posllh_buff_idx, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
-    
-    gps_posllh.posllh_buff_idx += RECEIVE_BUFF_SIZE;
-    
-    if(gps_posllh.read_rx_pause == 0)
+  for(i=0; i<RECEIVE_BUFF_SIZE; i++)
+  {     
+    if(gps_posllh.rx_data_buff[i] == 0xB5 && gps_posllh.rx_data_buff[i+1] == 0x62)
     {
-      gps_posllh.read_rx_pause = -1;
-      gps_posllh.posllh_buff_idx = 0;
-      gps_posllh.packet_complete_flag = 1;
-    }
-  }
-  
-  if(gps_posllh.read_rx_pause == -1)
-  {
-    for(i=0; i<RECEIVE_BUFF_SIZE; i++)
-    {     
-      if(gps_posllh.data_dma_receive_buff[i] == 0xB5 && gps_posllh.data_dma_receive_buff[i+1] == 0x62)
+      if(gps_posllh.rx_data_buff[i+2] == 0x01 && gps_posllh.rx_data_buff[i+3] == 0x02)
       {
-        if(gps_posllh.data_dma_receive_buff[i+2] == 0x01 && gps_posllh.data_dma_receive_buff[i+3] == 0x02)
+        gps_posllh.packet_complete_flag = 1;
+        gps_posllh.start_packet_idx = i;
+        
+        if(gps_posllh.start_packet_idx + NAV_POSLLH_SIZE > RECEIVE_BUFF_SIZE)
         {
-          gps_posllh.read_rx_pause = 4;
+          index = RECEIVE_BUFF_SIZE - gps_posllh.start_packet_idx + 1;
           
-          memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.data_dma_receive_buff + i, RECEIVE_BUFF_SIZE-i);
-          gps_posllh.posllh_buff_idx = RECEIVE_BUFF_SIZE-i;
-          
-          /*
-          if(i + NAV_POSLLH_SIZE < RECEIVE_BUFF_SIZE)
-          {
-            memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.data_dma_receive_buff + i, RECEIVE_BUFF_SIZE);
-            gps_posllh.packet_complete_flag = 1;
-            gps_posllh.posllh_buff_idx = 0;
-            break;
-          }
-          else
-          {
-            gps_posllh.read_rx_pause = 1;
-            gps_posllh.posllh_buff_idx = RECEIVE_BUFF_SIZE - i;
-          }
-          */
-          
+          memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.rx_data_buff + gps_posllh.start_packet_idx, index);
+          memcpy(gps_posllh.posllh_rx_data_buff + (index -1), gps_posllh.rx_data_buff, NAV_POSLLH_SIZE - index + 1);
         }
+        else
+          memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.rx_data_buff + gps_posllh.start_packet_idx, NAV_POSLLH_SIZE); 
+        
+        break;
       }
     }
   }
-  
-  
 }
 
 int calculate_gps_check_sum()
@@ -85,7 +52,7 @@ int calculate_gps_check_sum()
   gps_posllh.CK_A = 0;
   gps_posllh.CK_B = 0;
   
-  for(i=gps_posllh.start_packet_idx+2; i< gps_posllh.start_packet_idx + NAV_POSLLH_SIZE-2; i++)
+  for(i=2; i< NAV_POSLLH_SIZE-2; i++)
   {
     gps_posllh.CK_A = gps_posllh.CK_A + gps_posllh.posllh_rx_data_buff[i];
     gps_posllh.CK_B = gps_posllh.CK_B + gps_posllh.CK_A;
@@ -99,13 +66,14 @@ int calculate_gps_check_sum()
   else
   {
     gps_posllh.check_sum_complete_flag = 1;
+    gps_posllh.rx_buff_idx = 0;
     
-    /*
+#if 1
     for(i=0; i<NAV_POSLLH_SIZE; i++)
       printf("%4X ", gps_posllh.posllh_rx_data_buff[i]);
       
     printf("\r\n");
-*/
+#endif
   }
   
   return 0;
@@ -128,11 +96,6 @@ void decode_gps_posllh_packet()
     gps_posllh.posllh_data_buff[i] = posllh_union.data_int;
   }
   
-  
-  for(i=0; i<7; i++)
-  {
-    gps_posllh.posllh_data_buff[i] = posllh_union.data_int;
-  }
    
 //  for(i=0; i<7; i++)
 //    printf("%4d ", gps_posllh.posllh_data_buff[i]);
@@ -235,12 +198,14 @@ void decode_gps_posllh_packet()
   gps_posllh.distance = pow(gps_posllh.longitude_distance, 2) + pow(gps_posllh.latitude_distance, 2);
   gps_posllh.distance = sqrt(gps_posllh.distance);
   
-  /*
-  printf("%f %f %f \r\n", gps_posllh.longitude_distance, gps_posllh.latitude_distance, gps_posllh.distance);
+  
+  //printf("%f %f %f \r\n", gps_posllh.longitude_distance, gps_posllh.latitude_distance, gps_posllh.distance);
     
+#if 0
+  printf("\r\n");
   printf("%f %d %d %f ", gps_posllh.time, gps_posllh.longitude_degrees, gps_posllh.longitude_minute, gps_posllh.longitude_second);
   printf("%d %d %f %f %f\r\n", gps_posllh.latitude_degrees, gps_posllh.latitude_minute, gps_posllh.latitude_second ,gps_posllh.ellipsoid, gps_posllh.mean_sealevel);
-  printf("\r\n");
-*/
+  printf("%f \r\n", gps_posllh.distance);
+#endif
 
 }
