@@ -7,10 +7,9 @@
 #include "math.h"
 #include "string.h"
 
-#define RECEIVE_BUFF_SIZE 8
+#define RECEIVE_BUFF_SIZE 80
 #define GPS_BUFF_SIZE 1024
 #define NAV_POSLLH_SIZE 36
-#define NAV_POSLLH_LENGTH 28
 
 #define PI 3.141592653589
 
@@ -37,7 +36,7 @@ typedef union _GPS_POSLLH_UNION
 typedef struct _GPS_POSLLH
 {
   uint8_t       data_dma_receive_buff[RECEIVE_BUFF_SIZE];
-  uint8_t       posllh_rx_data_buff[GPS_BUFF_SIZE];
+  uint8_t       posllh_rx_data_buff[NAV_POSLLH_SIZE];
   uint8_t       rx_data_buff[GPS_BUFF_SIZE];
   
   uint8_t       CK_A;
