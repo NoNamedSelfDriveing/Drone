@@ -176,44 +176,35 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-#if 0
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-  
-#if 1
-  if(huart->Instance == USART6)
-  {
-    memcpy(gps_posllh.rx_data_buff, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
-    gps_posllh.rx_buff_idx += RECEIE_BUFF_SIZE;
-  }
-#endif
-  
-}
-#endif
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  static int gps_rx_flag = 0;
+  static uint16_t uart6_ndtr = 0;
+  static uint16_t prev_uart6_ndtr = 0;
   
   if(htim->Instance==TIM7)
   {
 #if 1
-    printf("test %.4d %.4d\r\n",HAL_GetTick(),loop_counter);
+    printf("test %.4d %.4d %.4d \r\n",HAL_GetTick(),loop_counter, count);
 
     loop_counter = 0;
+    count = 0;
 #endif
   }
   else if(htim->Instance==TIM6)
   {
-    if(huart6.hdmarx->Instance->NDTR < 80 && gps_rx_flag == 1)
-      gps_rx_flag = 0;
+    uart6_ndtr = huart6.hdmarx->Instance->NDTR;
     
-    if(huart6.hdmarx->Instance->NDTR > 79 && gps_rx_flag == 0)
-    {   
-      gps_rx_flag = 1;
+    if(prev_uart6_ndtr > uart6_ndtr)
+    { 
+      read_gps_packet(prev_uart6_ndtr, uart6_ndtr);
       
-      memcpy(gps_posllh.rx_data_buff, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
-      check_gps_packet();
+      prev_uart6_ndtr = huart6.hdmarx->Instance->NDTR;
+      
+      
+      
+      //check_gps_packet();
+      
+      count++;
 
     }
     

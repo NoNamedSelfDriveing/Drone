@@ -8,13 +8,53 @@ void gps_posllh_init()
   gps_posllh.CK_A = 0;
   gps_posllh.CK_B = 0;
   
-  gps_posllh.rx_buff_idx = 0;
   gps_posllh.check_byte = -1;
-  gps_posllh.read_rx_pause = 0;
+  gps_posllh.read_rx_waiting = 0;
   gps_posllh.packet_complete_flag = 0;
   gps_posllh.check_sum_complete_flag = 0;
+    
+  gps_posllh.rx_data_buff_idx = 0;
+  gps_posllh.dma_data_buff_idx = 0;
 }
 
+void read_gps_packet(uint16_t prev_ndtr, uint16_t ndtr)
+{
+  int size = prev_ndtr - ndtr;
+  int i;
+  
+  gps_posllh.dma_data_buff_idx = RECEIVE_BUFF_SIZE - prev_ndtr;
+  
+  switch(gps_posllh.read_rx_waiting)
+  {
+  case 0:
+    for(i = gps_posllh.dma_data_buff_idx; i<gps_posllh.dma_data_buff_idx + size; i++)
+    {
+      if(gps_posllh.data_dma_receive_buff[i] == 0xB5)
+      {
+        gps_posllh.start_packet_idx = gps_posllh.dma_data_buff_idx + i;
+        gps_posllh.read_packet_count = 0;
+        gps_posllh.read_rx_waiting = 1;
+      }
+    }
+    
+    break;
+    
+  case 1:
+    count += size;
+    
+    if(count >= GPS_DATA_SIZE)
+      gps_posllh.read_rx_waiting = 2;
+    
+    break;
+    
+  case 2:
+    
+    if(gps_posllh.start_packet_idx + 80 > RECEIVE_BUFF_SIZE)
+    break;
+    
+  }
+}
+  
 void check_gps_packet()
 {
   int i = 0;
@@ -31,10 +71,12 @@ void check_gps_packet()
         
         if(gps_posllh.start_packet_idx + NAV_POSLLH_SIZE > RECEIVE_BUFF_SIZE)
         {
+         /* 
           index = RECEIVE_BUFF_SIZE - gps_posllh.start_packet_idx + 1;
           
           memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.rx_data_buff + gps_posllh.start_packet_idx, index);
           memcpy(gps_posllh.posllh_rx_data_buff + (index -1), gps_posllh.rx_data_buff, NAV_POSLLH_SIZE - index + 1);
+*/
         }
         else
           memcpy(gps_posllh.posllh_rx_data_buff, gps_posllh.rx_data_buff + gps_posllh.start_packet_idx, NAV_POSLLH_SIZE); 
@@ -60,6 +102,7 @@ int calculate_gps_check_sum()
   
   if(gps_posllh.CK_A != gps_posllh.posllh_rx_data_buff[NAV_POSLLH_SIZE-2] || gps_posllh.CK_B != gps_posllh.posllh_rx_data_buff[NAV_POSLLH_SIZE-1])
   {
+    gps_posllh.rx_buff_idx = 0;
     gps_posllh.check_sum_complete_flag = 0;
     return -1;
   }
@@ -68,7 +111,7 @@ int calculate_gps_check_sum()
     gps_posllh.check_sum_complete_flag = 1;
     gps_posllh.rx_buff_idx = 0;
     
-#if 1
+#if 0
     for(i=0; i<NAV_POSLLH_SIZE; i++)
       printf("%4X ", gps_posllh.posllh_rx_data_buff[i]);
       

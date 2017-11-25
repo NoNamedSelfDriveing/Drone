@@ -7,9 +7,11 @@
 #include "math.h"
 #include "string.h"
 
-#define RECEIVE_BUFF_SIZE 80
-#define GPS_BUFF_SIZE 1024
+#define RECEIVE_BUFF_SIZE 1024
+#define GPS_BUFF_SIZE 80
 #define NAV_POSLLH_SIZE 36
+#define NAV_VELNED_SIZE 44
+#define GPS_DATA_SIZE 80
 
 #define PI 3.141592653589
 
@@ -37,6 +39,7 @@ typedef struct _GPS_POSLLH
 {
   uint8_t       data_dma_receive_buff[RECEIVE_BUFF_SIZE];
   uint8_t       posllh_rx_data_buff[NAV_POSLLH_SIZE];
+  uint8_t       gps_data_buff
   uint8_t       rx_data_buff[GPS_BUFF_SIZE];
   
   uint8_t       CK_A;
@@ -44,11 +47,14 @@ typedef struct _GPS_POSLLH
 
   int           packet_complete_flag;
   int           check_sum_complete_flag;
-  int           rx_buff_idx;
+  
   int           start_packet_idx;
-  int           check_byte;
-  int           read_rx_pause;
+  int           read_rx_waiting;
   int           posllh_buff_idx;
+  int           rx_data_buff_idx;
+  int           dma_data_buff_idx;
+  
+  int           read_packet_count = 0;
   
   int           posllh_data_buff[7];
   
@@ -90,5 +96,6 @@ int             calculate_gps_check_sum();
 void            gps_posllh_init();
 void            decode_gps_posllh_packet();
 void            check_gps_packet();
+void            read_gps_packet(uint16_t prev_ndtr, uint16_t ndtr);
 
 #endif
