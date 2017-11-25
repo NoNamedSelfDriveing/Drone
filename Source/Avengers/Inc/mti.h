@@ -4,6 +4,8 @@
 #include "stm32f4xx_hal.h"
 
 #define SIZE(__BUFFER__) (sizeof(__BUFFER__)/sizeof(*(__BUFFER__)))
+#define MTI_DMA_RX_SIZE 1024
+#define MTI_PACKET_SIZE 99
 
 typedef union _mti_data
 {
@@ -45,6 +47,7 @@ extern uint8_t mti_rx_buff[1024];
 extern uint8_t mti_packet_buff[1024];
 extern MTI mti;
 extern MTIState mti_state;
+extern int rx_size;
 
 void receive_mti_packet();
 void check_mti_packet();

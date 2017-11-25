@@ -9,58 +9,122 @@ MTI mti;
 
 uint8_t mti_rx_flag;
 uint8_t mti_checksum_flag;
-uint16_t mti_msg_len = 99;
 uint8_t mti_rx_buff[1024];
 uint8_t mti_temp_buff[1024];
 uint8_t mti_packet_buff[1024];
+int rx_size = 0;
 
 /* mti로부터 DMA로 패킷 받아오는 함수 */
 void receive_mti_packet()
 {
-  static int prev_idx = 0, curr_idx = 0;
-  static int start_idx = 0, end_idx = 0;
-  static uint8_t packet_start_flag = 0;
+    static int prev_ndt = MTI_DMA_RX_SIZE, curr_ndt = 0;
+    static int prev_idx = 0, curr_idx = 0;
+    static int start_idx = 0, end_idx = MTI_DMA_RX_SIZE;
+    static int prev_start_idx = 0, prev_end_idx = MTI_DMA_RX_SIZE;
+    static int initial_rx_start_flag = 1;
+    int i, next_i;
+    uint8_t received_data_size = 0;
+    
+    /* 현재 ndt 구하기 */
+    curr_ndt = __HAL_DMA_GET_COUNTER(&hdma_usart3_rx);
 
-  /* DMA로 mti_rx_buff에 저장한 8바이트 데이터 mti_temp_bufff로 복사 
-      destination 주소 8씩 증가(다음 8바이트 데이터 저장하기 위해)*/
-  memcpy((mti_temp_buff+curr_idx), mti_rx_buff, 8);     
-  prev_idx = curr_idx;
-  curr_idx += 8;
-  
-  /* 한 패킷의 내용(데어터)가 완전히 수신되면  */
-  if((packet_start_flag == 1) && ((curr_idx - 2) >  end_idx))
-  {
-    packet_start_flag = 0;
-    /* 다음 패킷 수신할 인덱스를 현재 패킷의 마지막 데이터의 인덱스의 다음 인덱스로 변경 */
-    prev_idx = end_idx + 1;
-    
-    /* 수신한 패킷을 다른 버퍼로 복사 */
-    memcpy(mti_packet_buff, (mti_temp_buff+start_idx), mti_msg_len);
-    mti_state.packet_rx_flag = 1;
-    
-    /* 다음 패킷의 마지막 데이터의 인덱스가 버퍼의 마지막 인덱스를 넘어서면 */
-    if((prev_idx + mti_msg_len) >= SIZE(mti_temp_buff))
+    /* 이전 ndt와 현재 ndt의 차이에 따른 처리 */
+    if(prev_ndt > curr_ndt)
     {
-      /* 현재 버퍼에 저장된 잘린 패킷(마지막 패킷)을 버퍼의 맨 앞으로 이동 */
-      memcpy(mti_temp_buff, (mti_temp_buff+prev_idx), (curr_idx-prev_idx));
-      /* 잘린 패킷을 이을 데이터 수신할 인덱스를 잘린 패킷 다음 인덱스로 설정 */
-      curr_idx = curr_idx - prev_idx;
-      prev_idx = 0;
+      received_data_size = prev_ndt - curr_ndt;
     }
- }
- 
- /* 수신한 8바이트 중에 패킷 메시지 헤더가 있는지 검사 */
-  for(int i = prev_idx; i < curr_idx  - 1; i++)
-  {
-    if((mti_temp_buff[i] == 0xfa) && (mti_temp_buff[i+1] == 0xff))
+    else if(prev_ndt < curr_ndt)
     {
-      /* 패킷 start 인덱스, end 인덱스 설정*/
-      packet_start_flag = 1;
-      start_idx = i;
-      end_idx = start_idx + (mti_msg_len - 1);
-      break;
+      received_data_size = prev_ndt + (MTI_DMA_RX_SIZE - curr_ndt);
     }
-  }
+    else
+    {
+      return;
+    }
+
+    /* DMA로 수신되는 버퍼의 현재 인덱스(마지막으로 들어온 인덱스 + 1) 구하기 */
+    rx_size += received_data_size;
+    curr_idx = (prev_idx + received_data_size) % MTI_DMA_RX_SIZE;
+    
+    /* 현재 들어온 데이터의 시작 인덱스부터 마지막 인덱스까지 검사 */
+    i = prev_idx - 1;
+    next_i = i + 1;
+    if(i == -1) 
+    {
+      i = MTI_DMA_RX_SIZE - 1;
+      next_i = 0;
+    }
+    
+    /* 전원 투입 후 1초일 때 99가 뜨는 문제 해결용 처리 코드 */
+    /*
+    if(initial_rx_start_flag)
+    {
+      initial_rx_start_flag = 0;
+      i = 0;
+      next_i = i + 1;
+    }
+    */
+    while(1)
+    {
+      /* 체크섬 바이트가 들어왔다면*/
+      if(i == end_idx)
+      { 
+        prev_start_idx = start_idx;
+        prev_end_idx = end_idx;
+
+        /* 패킷의 시작 , 끝 인덱스의 차이에 따른 처리
+            온전한 한 패킷만을 담아놓는 버퍼로 복사 */
+        if(prev_start_idx < prev_end_idx)
+        {
+          memcpy(mti_packet_buff, (mti_rx_buff + prev_start_idx), (prev_end_idx - prev_start_idx) + 1);
+        }
+        
+        else if(prev_start_idx > prev_end_idx)
+        {
+          memcpy(mti_packet_buff, (mti_rx_buff + prev_start_idx), (MTI_DMA_RX_SIZE - prev_start_idx));
+          memcpy((mti_packet_buff + (MTI_DMA_RX_SIZE - prev_start_idx)), mti_rx_buff, prev_end_idx + 1);
+        }
+        mti_state.packet_rx_flag = 1;
+      }
+         
+      if((mti_rx_buff[i] == 0xfa) && (mti_rx_buff[next_i] == 0xff))
+      {
+        prev_start_idx = start_idx;
+        prev_end_idx = end_idx;
+        start_idx = i;
+        end_idx = (start_idx + (MTI_PACKET_SIZE - 1)) % MTI_DMA_RX_SIZE;
+      }
+      
+      /* 링버퍼로 인한 인덱스 변화 처리 */
+      i = (i+1) % MTI_DMA_RX_SIZE;
+      next_i = (i+1) % MTI_DMA_RX_SIZE;
+      
+      /* 현재 들어온 데이터의 마지막 인덱스까지 검사를 마치면 break */
+      if(next_i == curr_idx)
+      {
+        /* 현재 들어온 데이터의 마지막 인덱스가 CheckSum일 때에 대한 처리 */
+        if(i == prev_end_idx)
+        {
+          if(prev_start_idx < prev_end_idx)
+          {
+            memcpy(mti_packet_buff, (mti_rx_buff + prev_start_idx), (prev_end_idx - prev_start_idx) + 1);
+          }
+          
+          else if(prev_start_idx > prev_end_idx)
+          {     
+            memcpy(mti_packet_buff, (mti_rx_buff + prev_start_idx), (MTI_DMA_RX_SIZE - prev_start_idx));
+            memcpy((mti_packet_buff + (MTI_DMA_RX_SIZE - prev_start_idx)), mti_rx_buff, (prev_end_idx + 1));
+          }
+          mti_state.packet_rx_flag = 1;
+          //mti_state.count++;
+        }
+        break;
+      }
+    }
+    
+    /* 현재 값을 이전 값으로 세팅 */
+    prev_ndt = curr_ndt;
+    prev_idx = curr_idx;
 }
 
 /* mti 패킷 무결성 체크 함수 */
@@ -72,16 +136,20 @@ void check_mti_packet()
   mti_state.packet_rx_flag = 0;
   mti_state.checksum_flag = 0;
   
-  for(i = 1; i < mti_msg_len; i++)
+  for(i = 1; i < MTI_PACKET_SIZE; i++)
   {
     result += mti_packet_buff[i];
+    //printf("%x ", mti_packet_buff[i]);
   }
+  //printf("%x", mti_packet_buff[0]);
+ // printf("\r\n\r\n");
   checksum = result & 0x00ff;
   
   /* 패킷의 무결성이 결정되면 flag SET */
   if(checksum == 0x0000)
   {
     mti_state.checksum_flag = 1;
+    //printf("success!\r\n");
   }
 }
 
