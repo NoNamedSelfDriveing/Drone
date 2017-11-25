@@ -56,6 +56,7 @@
 
 extern SBUS sbus;
 extern SBUS_pwm sbus_pwm;
+
 uint16_t number = 0;
 
 /* USER CODE END PV */
@@ -197,9 +198,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
 	ndtr = huart1.hdmarx->Instance->NDTR;
 	
 	// Is DMA receive buffer full
-	if(ndtr > 24){
+	if(ndtr < 25 && sbus.rx_flag){
+	  sbus.rx_flag = 0;
+	}else if(ndtr > 24 && sbus.rx_flag == 0){
+	  sbus.rx_flag = 1;
 	  COPY_TO_STACK();
-	  while(IS_NOT_NEXT_CIRCLE());		// Wait for start next circle of DMA
 	  sbus.uart_rx_stacking_idx += ndtr;
 	  
 	  // Check start byte and end byte
@@ -212,7 +215,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
 	}
 	
   }else if(htim->Instance == htim7.Instance){
-	printf("htim7 : %d\n\r", number);
+	printf("htim7 : %d, TICK : %d\n\r", number, HAL_GetTick());
+	//printf("TICK : %d\n\r", HAL_GetTick());
 	number = 0;
   }
 }

@@ -1,7 +1,7 @@
 /**********************************************************************
  *     sbus.c                                                         *
  *     written by Soomin Lee (MagmaTart)                              *
- *     Last modify date : 2017.11.14                                  *
+ *     Last modify date : 2017.11.23                                  *
  *     Description : Implements of Functions to use SBUS protocol.    *
  **********************************************************************/
 
@@ -25,11 +25,8 @@ void init_sbus_pwm(){
 }
 
 void init_sbus(){
-  //sbus.sbus_pwm = sbus_pwm;
-
   sbus.uart_rx_stacking_idx = 0;
   sbus.sb_index_saver = 0;
-  sbus.rx_flag = 0;
   sbus.start_flag = 0;
 }
 
@@ -106,7 +103,7 @@ void decode_sbus_data()
     sbus.data_buff[row_index][5] = (uint16_t)((sbus.uart_rx_buff[row_index][7]&0x80)>>7) + (uint16_t)(sbus.uart_rx_buff[row_index][8]<<1) + (uint16_t)((sbus.uart_rx_buff[row_index][9]&0x03)<<9);
     sbus.data_buff[row_index][6] = (uint16_t)((sbus.uart_rx_buff[row_index][9]&0xfc)>>2) + (uint16_t)((sbus.uart_rx_buff[row_index][10]&0x1f)<<6);
   }
-  printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\r", sbus.data_buff[0][0], sbus.data_buff[0][1], sbus.data_buff[0][2], sbus.data_buff[0][3], sbus.data_buff[0][4], sbus.data_buff[0][5], sbus.data_buff[0][6]);
+  //printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\r", sbus.data_buff[0][0], sbus.data_buff[0][1], sbus.data_buff[0][2], sbus.data_buff[0][3], sbus.data_buff[0][4], sbus.data_buff[0][5], sbus.data_buff[0][6]);
 }
 
 void sbus_pwm_make_with_value(TIM_HandleTypeDef * htim){
