@@ -57,7 +57,9 @@
 extern SBUS sbus;
 extern SBUS_pwm sbus_pwm;
 
-uint16_t number = 0;
+uint32_t number = 0;
+uint16_t ps = 0;
+uint16_t sp = 0;
 
 /* USER CODE END PV */
 
@@ -108,7 +110,7 @@ int main(void)
   MX_TIM6_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_DMA(&huart1, sbus.uart_rx_receive_buff, DMA_RECEIVE_SIZE);
+  HAL_UART_Receive_DMA(&huart1, sbus.dma_receive_buff, DMA_RECEIVE_SIZE);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   
   HAL_TIM_Base_Start_IT(&htim6);
@@ -124,7 +126,6 @@ int main(void)
   
   while (1)
   {
-	
   }
   /* USER CODE END WHILE */
 
@@ -192,32 +193,11 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
-  uint16_t ndtr;
-  
-  if(htim->Instance == htim6.Instance){  	
-	ndtr = huart1.hdmarx->Instance->NDTR;
-	
-	// Is DMA receive buffer full
-	if(ndtr < 25 && sbus.rx_flag){
-	  sbus.rx_flag = 0;
-	}else if(ndtr > 24 && sbus.rx_flag == 0){
-	  sbus.rx_flag = 1;
-	  COPY_TO_STACK();
-	  sbus.uart_rx_stacking_idx += ndtr;
-	  
-	  // Check start byte and end byte
-	  if(SHOULD_CHECK_BYTE_OK()){
-		make_next_decodeable_buffer();
-        check_sbus_data_packet();
-	    decode_sbus_data();
-	    number++;
-	  }
+  if(htim->Instance == htim6.Instance){
+	update_buffer();
+	if(make_next_decodeable_buffer()){
+	  decode_sbus_data();
 	}
-	
-  }else if(htim->Instance == htim7.Instance){
-	printf("htim7 : %d, TICK : %d\n\r", number, HAL_GetTick());
-	//printf("TICK : %d\n\r", HAL_GetTick());
-	number = 0;
   }
 }
 
