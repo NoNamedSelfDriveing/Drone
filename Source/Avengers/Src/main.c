@@ -50,7 +50,6 @@
 #include "gps.h"
 #include "gy63.h"
 #include "sbus.h"
-//#include "sbus.h"
     
 /* USER CODE END Includes */
 
@@ -58,6 +57,9 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+//extern SBUS sbus;
+//extern SBUS_pwm sbus_pwm;
+
 uint16_t loop_count = 0;
 uint16_t count = 0;
 uint16_t number = 0;
@@ -68,7 +70,7 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+void initialize();
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -111,25 +113,18 @@ int main(void)
   MX_TIM1_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim6);
-  HAL_TIM_Base_Start_IT(&htim7);
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  
-  HAL_UART_Receive_DMA(&huart1, sbus.uart_rx_receive_buff, DMA_RECEIVE_SIZE);
-  HAL_UART_Receive_DMA(&huart3, mti_rx_buff, MTI_DMA_RX_SIZE);
- 
-  init_sbus_pwm();
-  init_sbus();
-  
+  initialize();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   
+  
   while (1)
   {
-    get_gy63_calibration_data();
-    get_altitude();
+//    read_gy63_adc(CMD_ADC_4096);
+//    calculate_gy63_altitude();
+//    HAL_Delay(100);
     
   /* USER CODE END WHILE */
 
@@ -195,41 +190,64 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/* All of things initialize function */
+void initialize()
+{
+  init_tim();
+  init_uart_dma();
+  init_pwm();
+  init_sbus();
+  init_gy63();
+  init_mti();
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+  static uint8_t idx;
   /* 1Hz */
   if(htim->Instance == TIM7)
   {
     printf("%d %d %d\r\n", HAL_GetTick(), mti_state.count, rx_size);
     number = 0;
-    loop_count = 0;
     mti_state.count = 0;
     rx_size = 0;
   }
   /* 1000Hz */
   else if(htim->Instance == TIM6)
   {
-    receive_mti_packet();
-    if(mti_state.packet_rx_flag)
-    {
-      check_mti_packet();
-      if(mti_state.checksum_flag)
-      {
-        decode_mti_packet();
-        mti_state.count++;
-      }
-    }  
-    /*
-    else if( IS_STACKING_BUFFER_FULL() )
-    {
-      make_next_decodeable_buffer();
-      check_sbus_data_packet();
-      decode_sbus_data();
-      number++;
-	  //make_sbus_pwm_with_value(&htim1, TIM_CHANNEL_1, value);   :    Make PWM Signal
-    }
-    */
-    loop_count++;
+      read_mti();
+//    read_mti();
+//    read_sbus();
+//    
+//    controll_cmd();
+//    controller();
+//    mixer();
+//    
+//    write_pwm();
+    
+//    receive_mti_packet();
+//    if(mti_state.packet_rx_flag)
+//    {
+//      check_mti_packet();
+//      if(mti_state.checksum_flag)
+//      {
+//        decode_mti_packet();
+//        mti_state.count++;
+//      }
+//    }
+    
+//    update_buffer();
+//    if(make_next_decodeable_buffer()){
+////      decode_sbus_data();
+//    }
+//    
+//    if(++idx >=10){
+//      //printf("%.4f %.4d\r\n",mti.euler[0], sbus.data_buff[2]);
+//      printf("HELLO WORLD!\n\r");
+//      idx = 0;
+//    }
+    
   }
 }
 

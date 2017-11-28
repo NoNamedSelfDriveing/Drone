@@ -7,18 +7,19 @@
 #define MTI_DMA_RX_SIZE 1024
 #define MTI_PACKET_SIZE 99
 
+typedef struct _mti_state
+{
+  uint8_t new_packet_flag;
+  uint8_t packet_rx_flag;
+  uint8_t checksum_flag;
+  uint16_t count;
+}MTIState;
+
 typedef union _mti_data
 {
   uint8_t buff[76];
   float value[19];
 }MTIData;
-
-typedef struct _mti_state
-{
-  volatile uint8_t packet_rx_flag;
-  volatile uint8_t checksum_flag;
-  uint16_t count;
-}MTIState;
 
 typedef struct _mti
 {
@@ -43,12 +44,14 @@ typedef enum _SensorType
 extern uint8_t mti_rx_flag;
 extern uint8_t mti_checksum_flag;
 extern uint16_t mti_msg_len;
-extern uint8_t mti_rx_buff[1024];
-extern uint8_t mti_packet_buff[1024];
+extern uint8_t mti_rx_buff[MTI_DMA_RX_SIZE];
+extern uint8_t mti_packet_buff[MTI_PACKET_SIZE];
 extern MTI mti;
 extern MTIState mti_state;
 extern int rx_size;
 
+void init_mti();
+void read_mti();
 void receive_mti_packet();
 void check_mti_packet();
 void decode_mti_packet();
