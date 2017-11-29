@@ -48,7 +48,8 @@
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "sbus.h"
+#include "mti.h"
 /* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart1;
@@ -69,7 +70,7 @@ void MX_USART3_UART_Init(void);
 void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void init_uart_dma();
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
