@@ -54,9 +54,12 @@ typedef struct _SBUS
   uint16_t packet_start_idx;
   uint16_t packet_end_idx;        //온전한 패킷의 시작 인덱스, 끝 인덱스
   uint16_t check_idx;  
+  uint16_t count;
 }SBUS;
 
 void SystemClock_Config(void);
+
+void read_sbus();
 
 void init_sbus_pwm();
 
@@ -75,4 +78,7 @@ void decode_sbus_data();
 // make pwm signal based on sbus data
 void sbus_pwm_make_with_value(TIM_HandleTypeDef*);
 
+extern SBUS sbus;
+extern uint8_t dma_receive_buff[DMA_RECEIVE_SIZE];
+extern uint8_t packet_buff[SBUS_DATA_SIZE];
 #endif
