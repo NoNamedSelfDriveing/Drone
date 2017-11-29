@@ -194,7 +194,7 @@ void SystemClock_Config(void)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim){
   if(htim->Instance == htim6.Instance){
-	update_buffer();
+	//update_buffer();
 	if(make_next_decodeable_buffer()){
 	  decode_sbus_data();
 	}
