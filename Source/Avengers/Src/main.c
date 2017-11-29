@@ -122,9 +122,9 @@ int main(void)
   
   while (1)
   {
-//    read_gy63_adc(CMD_ADC_4096);
-//    calculate_gy63_altitude();
-//    HAL_Delay(100);
+    read_gy63_adc(CMD_ADC_4096);
+    calculate_gy63_altitude();
+    HAL_Delay(100);
     
   /* USER CODE END WHILE */
 
