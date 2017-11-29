@@ -16,7 +16,20 @@
 
 SBUS sbus;
 SBUS_pwm sbus_pwm;
+uint8_t dma_receive_buff[DMA_RECEIVE_SIZE];
+uint8_t packet_buff[SBUS_DATA_SIZE];
+uint16_t data_buff[18];
+
 extern DMA_HandleTypeDef hdma_usart1_rx;
+
+void read_sbus()
+{
+  make_next_decodeable_buffer();
+  if(sbus.packet_ok_flag)
+  {
+    decode_sbus_data();
+  }
+}
 
 void init_sbus_pwm(){
   sbus_pwm.min_duty = 4598;
@@ -28,14 +41,19 @@ void init_sbus_pwm(){
 
 void init_sbus(){
   sbus.prev_ndt = DMA_RECEIVE_SIZE;
-  sbus.curr_ndt = DMA_RECEIVE_SIZE;
+  sbus.curr_ndt = 0;
   sbus.received_size = 0;
 
   sbus.front = 0;
   sbus.rear = 0;
   
+  sbus.new_data_start_idx = 0;
+  sbus.next_data_start_idx = 0;
+  sbus.packet_start_idx = 0;
+  sbus.packet_end_idx = DMA_RECEIVE_SIZE;
   sbus.new_packet_flag = 1;
   sbus.packet_ok_flag = 0;
+  sbus.count = 0;
 }
 
 /*
@@ -69,7 +87,7 @@ void make_next_decodeable_buffer()
 {
   //static int sbus.prev_ndt = DMA_RECEIVE_SIZE, sbus.curr_ndt = 0;                                //이전 ndt, 현재 ndt
     uint16_t i;                                                            // 버퍼의 내용을 검사할 인덱스와 그 옆의 인덱스                                                                                         
-    uint8_t received_data_size = 0;                                                             //수신한 데이터 수
+    uint16_t received_data_size = 0;                                                             //수신한 데이터 수
     
     /* 현재 ndt 구하기 */
     sbus.curr_ndt = __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
@@ -100,19 +118,19 @@ void make_next_decodeable_buffer()
     //next_check_idx = check_idx + 1;
 
     // 음수처리
-    if(sbus.check_idx == -1) 
-    {
-      sbus.check_idx = DMA_RECEIVE_SIZE - 1;
-      //next_check_idx = 0;
-    }
+//    if(sbus.check_idx == -1) 
+//    {
+//      sbus.check_idx = DMA_RECEIVE_SIZE - 1;
+//      //next_check_idx = 0;
+//    }
 
     /* 현재 들어온 데이터의 마지막 인덱스까지 검사를 마치면 break */
     while(!(sbus.check_idx == sbus.next_data_start_idx))
     {  
       /* 스타트 바이트 검사 */
-      if((sbus.new_packet_flag) && (sbus.dma_receive_buff[sbus.check_idx] == START_BYTE))
+      if((sbus.new_packet_flag) && (dma_receive_buff[sbus.check_idx] == START_BYTE))
       {
-		sbus.new_packet_flag = 0;
+	sbus.new_packet_flag = 0;
         sbus.packet_start_idx = sbus.check_idx;
         sbus.packet_end_idx = (sbus.packet_start_idx + (SBUS_DATA_SIZE - 1)) % DMA_RECEIVE_SIZE;  // 데이터 바이트만큼 적용
       }
@@ -122,21 +140,21 @@ void make_next_decodeable_buffer()
       //next_check_idx = (check_idx+1) % DMA_RECEIVE_SIZE;
       
 	  /* END 바이트가 들어왔다면*/
-      if(sbus.check_idx == sbus.packet_end_idx && sbus.dma_receive_buff[sbus.check_idx]%16 == END_BYTE)
+      if((sbus.check_idx == sbus.packet_end_idx) && ((dma_receive_buff[sbus.check_idx] & 0x04) == END_BYTE))
       {
 			/* 패킷의 시작 , 끝 인덱스의 차이에 따른 처리
             온전한 한 패킷만을 담아놓는 버퍼로 복사 */
         if(sbus.packet_start_idx < sbus.packet_end_idx)
         {              
-		  memcpy(sbus.packet_buff, (sbus.dma_receive_buff + sbus.packet_start_idx), ((sbus.packet_end_idx - sbus.packet_start_idx) + 1));
+          memcpy(packet_buff, (dma_receive_buff + sbus.packet_start_idx), ((sbus.packet_end_idx - sbus.packet_start_idx) + 1));
         }
         else if(sbus.packet_start_idx > sbus.packet_end_idx)
         {
-		  memcpy(sbus.packet_buff, (sbus.dma_receive_buff + sbus.packet_start_idx), (DMA_RECEIVE_SIZE - sbus.packet_start_idx));
-          memcpy((sbus.packet_buff + (DMA_RECEIVE_SIZE - sbus.packet_start_idx)), sbus.dma_receive_buff, (sbus.packet_end_idx + 1));
+          memcpy(packet_buff, (dma_receive_buff + sbus.packet_start_idx), (DMA_RECEIVE_SIZE - sbus.packet_start_idx));
+          memcpy((packet_buff + (DMA_RECEIVE_SIZE - sbus.packet_start_idx)), dma_receive_buff, (sbus.packet_end_idx + 1));
         }
 		
-		sbus.new_packet_flag = 1;
+        sbus.new_packet_flag = 1;
         sbus.packet_ok_flag = 1;
       }
     }
@@ -144,7 +162,7 @@ void make_next_decodeable_buffer()
     /* 현재 값을 이전 값으로 세팅 */
     sbus.prev_ndt = sbus.curr_ndt;
     sbus.new_data_start_idx = sbus.next_data_start_idx;
-	printf("");
+	//printf("");
 }
 
 void decode_sbus_data()
@@ -152,16 +170,18 @@ void decode_sbus_data()
   uint8_t i;
   
   sbus.packet_ok_flag = 0;
-  sbus.data_buff[0] = sbus.packet_buff[1] + (uint16_t)((sbus.packet_buff[2]&0x07)<<8);
-  sbus.data_buff[1] = (uint16_t)((sbus.packet_buff[2]&0xf8)>>3) + (uint16_t)((sbus.packet_buff[3]&0x3f)<<5);
-  sbus.data_buff[2] = (uint16_t)((sbus.packet_buff[3]&0xc0)>>6) + (uint16_t)(sbus.packet_buff[4]<<2) + (uint16_t)((sbus.packet_buff[5]&0x01)<<10);
-  sbus.data_buff[3] = (uint16_t)((sbus.packet_buff[5]&0xfe)>>1) + (uint16_t)((sbus.packet_buff[6]&0x0f)<<7);
-  sbus.data_buff[4] = (uint16_t)((sbus.packet_buff[6]&0xf0)>>4) + (uint16_t)((sbus.packet_buff[7]&0x7f)<<4);
-  sbus.data_buff[5] = (uint16_t)((sbus.packet_buff[7]&0x80)>>7) + (uint16_t)(sbus.packet_buff[8]<<1) + (uint16_t)((sbus.packet_buff[9]&0x03)<<9);
-  sbus.data_buff[6] = (uint16_t)((sbus.packet_buff[9]&0xfc)>>2) + (uint16_t)((sbus.packet_buff[10]&0x1f)<<6);
+  
+  data_buff[0] = (uint16_t)packet_buff[1] + (uint16_t)((packet_buff[2]&0x07)<<8);
+  data_buff[1] = (uint16_t)((packet_buff[2]&0xf8)>>3) + (uint16_t)((packet_buff[3]&0x3f)<<5);
+  data_buff[2] = (uint16_t)((packet_buff[3]&0xc0)>>6) + (uint16_t)(packet_buff[4]<<2) + (uint16_t)((packet_buff[5]&0x01)<<10);
+  data_buff[3] = (uint16_t)((packet_buff[5]&0xfe)>>1) + (uint16_t)((packet_buff[6]&0x0f)<<7);
+  data_buff[4] = (uint16_t)((packet_buff[6]&0xf0)>>4) + (uint16_t)((packet_buff[7]&0x7f)<<4);
+  data_buff[5] = (uint16_t)((packet_buff[7]&0x80)>>7) + (uint16_t)(packet_buff[8]<<1) + (uint16_t)((packet_buff[9]&0x03)<<9);
+  data_buff[6] = (uint16_t)((packet_buff[9]&0xfc)>>2) + (uint16_t)((packet_buff[10]&0x1f)<<6);
 
-  printf("%d : %.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\n\r", HAL_GetTick(), sbus.data_buff[0], sbus.data_buff[1], sbus.data_buff[2], sbus.data_buff[3], sbus.data_buff[4], sbus.data_buff[5], sbus.data_buff[6]);
-  memset(sbus.packet_buff, 0, SBUS_DATA_SIZE);
+  //printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\n\r", data_buff[0], data_buff[1], data_buff[2], data_buff[3], data_buff[4], data_buff[5], data_buff[6]);
+  //memset(packet_buff, 0, SBUS_DATA_SIZE);
+  sbus.count++;
   //printf("%d %d\n\r", sbus.prev_ndt, sbus.curr_ndt);
 }
 
