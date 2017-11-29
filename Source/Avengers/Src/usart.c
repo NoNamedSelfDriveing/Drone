@@ -354,7 +354,11 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 } 
 
 /* USER CODE BEGIN 1 */
-
+void init_uart_dma()
+{
+  HAL_UART_Receive_DMA(&huart1, sbus.dma_receive_buff, DMA_RECEIVE_SIZE);
+  HAL_UART_Receive_DMA(&huart3, mti_rx_buff, MTI_DMA_RX_SIZE);
+}
 /* USER CODE END 1 */
 
 /**
