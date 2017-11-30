@@ -39,6 +39,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
+#include "dma.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -54,6 +55,7 @@
 /* Private variables ---------------------------------------------------------*/
 uint16_t loop_counter;
 int count = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,16 +94,17 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM6_Init();
+  MX_TIM7_Init();
   MX_USART2_UART_Init();
   MX_USART6_UART_Init();
-  MX_TIM7_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim6);
   HAL_TIM_Base_Start_IT(&htim7);
   gps_init();
-  HAL_UART_Receive_DMA(&huart6, gps_posllh.data_dma_receive_buff, RECEIVE_BUFF_SIZE);
+  HAL_UART_Receive_DMA(&huart6, data_dma_receive_buff, GPS_DMA_BUFF_SIZE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -175,42 +178,20 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-
-#if 1
-  if(huart->Instance == USART6)
-  {
-    //check_gps_packet();
-  }
-#endif
-  
-}
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if(htim->Instance==TIM7){
-    printf("test %.4d %.4d\r\n",HAL_GetTick(),loop_counter);
-    loop_counter = 0;
+  if(htim->Instance==TIM7)
+  {
+    printf("test %.4d %.4d %.4d %.4d \r\n",HAL_GetTick(), gps_state.posllh_loop_counter, gps_state.velned_loop_counter, count);
+
+    gps_state.posllh_loop_counter = 0;
+    gps_state.velned_loop_counter = 0;
+    count = 0;
   }
   else if(htim->Instance==TIM6)
   {
-    if(gps_posllh.packet_complete_flag == 1)
-    {
-      gps_posllh.buff_idx = 0;
-      gps_posllh.packet_complete_flag = 0;
-      
-      //calculate_gps_check_sum();
-    }
-    
-    if(gps_posllh.check_sum_complete_flag == 1)
-    {
-      gps_posllh.check_sum_complete_flag = 0;
-      
-      decode_gps_posllh_packet();
-      loop_counter++;
-    }
+    read_gps();
+    count++;
     
   }
 }

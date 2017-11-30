@@ -1,6 +1,6 @@
-Configuration	GPS-Decoding
+Configuration	gps_merge
 STM32CubeMX 	4.23.0
-Date	11/25/2017
+Date	11/30/2017
 MCU	STM32F407VETx
 
 
@@ -33,8 +33,8 @@ Pin Nb	PINs	FUNCTIONs	LABELs
 SOFTWARE PROJECT
 
 Project Settings : 
-Project Name : GPS-Decoding
-Project Folder : D:\Project_CubeMx\Drone\GPS-decoding
+Project Name : gps_merge
+Project Folder : D:\Project_CubeMx\Drone\GPS_Decode_Merge\gps_merge
 Toolchain / IDE : EWARM
 Firmware Package Name and Version : STM32Cube FW_F4 V1.17.0
 
