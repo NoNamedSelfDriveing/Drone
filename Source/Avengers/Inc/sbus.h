@@ -28,7 +28,7 @@ typedef struct _SBUS
 void init_sbus();
 
 // READ FUNCTION
-int read_sbus();
+void read_sbus();
 
 // make next decodeable buffer in DMA receive buffer
 void make_next_decodeable_buffer();
