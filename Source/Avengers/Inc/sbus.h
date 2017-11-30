@@ -21,6 +21,8 @@
 #define START_BYTE 0x0f
 #define END_BYTE 0x04
 
+
+
 typedef struct _SBUS_PWM
 {
   float pwm;
@@ -43,11 +45,23 @@ typedef struct _SBUS
   
   uint16_t        front;
   uint16_t        rear;
+  
+  uint8_t         new_packet_flag;
+  uint8_t         packet_ok_flag;
+  
+  uint16_t new_data_start_idx;
+  uint16_t next_data_start_idx;                         //현재 새롭게 들어온 데이터의 인덱스, 다음 루틴에 들어올 데이터의 인덱스  
+  uint16_t packet_start_idx;
+  uint16_t packet_end_idx;        //온전한 패킷의 시작 인덱스, 끝 인덱스
+  uint16_t check_idx;  
+  uint16_t count;
 }SBUS;
 
 void SystemClock_Config(void);
 
-void init_pwm();
+void read_sbus();
+
+void init_sbus_pwm();
 
 void init_sbus();
 
@@ -56,7 +70,7 @@ void test();
 // make next decodeable buffer : Returns 1 when it able to decode.
 void update_buffer();
 
-uint8_t make_next_decodeable_buffer();
+void make_next_decodeable_buffer();
   
 // decode sbus data
 void decode_sbus_data();
@@ -65,5 +79,6 @@ void decode_sbus_data();
 void sbus_pwm_make_with_value(TIM_HandleTypeDef*);
 
 extern SBUS sbus;
-extern SBUS_pwm sbus_pwm;
+extern uint8_t dma_receive_buff[DMA_RECEIVE_SIZE];
+extern uint8_t packet_buff[SBUS_DATA_SIZE];
 #endif
