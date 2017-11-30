@@ -145,6 +145,7 @@ void calculate_gy63_altitude()
   }
   //gy63.altitude = 0.96 * gy63.altitude - home_alt;
   filtered_alt = 0.96 * filtered_alt + (1 - 0.96) * gy63.altitude;
+  //printf("%f %f %f\r\n",(gy63.altitude - home_alt),gy63.p,gy63.temp);
   printf("%f %f %f\r\n",(filtered_alt - home_alt),gy63.p,gy63.temp);
   //printf("dt : %d\r\n", gy63.dt);
   //printf("temp : %f\r\n", gy63.temp);
