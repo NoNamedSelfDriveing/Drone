@@ -57,12 +57,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-//extern SBUS sbus;
-//extern SBUS_pwm sbus_pwm;
-
-uint16_t loop_count = 0;
-uint16_t count = 0;
-uint16_t number = 0;
+    
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -78,7 +73,7 @@ void initialize();
 /* USER CODE END 0 */
 
 int main(void)
-{
+{       
 
   /* USER CODE BEGIN 1 */
   
@@ -113,6 +108,7 @@ int main(void)
   MX_TIM1_Init();
 
   /* USER CODE BEGIN 2 */
+  /* 모든 device 초기화 */
   initialize();
   /* USER CODE END 2 */
 
@@ -122,9 +118,9 @@ int main(void)
   
   while (1)
   {
-    read_gy63_adc(CMD_ADC_4096);
-    calculate_gy63_altitude();
-    HAL_Delay(100);
+    //read_gy63_adc(CMD_ADC_4096);
+    //calculate_gy63_altitude();
+    //HAL_Delay(100);
     
   /* USER CODE END WHILE */
 
@@ -192,11 +188,12 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* All of things initialize function */
+/* 모든 device 초기화 하는 함수 */
 void initialize()
 {
   init_tim();
   init_uart_dma();
-  init_pwm();
+  init_sbus_pwm();
   init_sbus();
   init_gy63();
   init_mti();
@@ -208,15 +205,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* 1Hz */
   if(htim->Instance == TIM7)
   {
-    printf("%d %d %d\r\n", HAL_GetTick(), mti_state.count, rx_size);
-    number = 0;
+    printf("%d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count);
+    //number = 0;
     mti_state.count = 0;
+    sbus.count = 0;
     rx_size = 0;
   }
   /* 1000Hz */
   else if(htim->Instance == TIM6)
   {
       read_mti();
+      read_sbus();
 //    read_mti();
 //    read_sbus();
 //    
