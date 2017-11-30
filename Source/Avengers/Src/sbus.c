@@ -22,16 +22,13 @@ uint16_t sbus_pwm_pulse[6];
 
 extern DMA_HandleTypeDef hdma_usart1_rx;
 
-int read_sbus()
+void read_sbus()
 {
   make_next_decodeable_buffer();
   if(sbus.packet_ok_flag)
   {
     decode_sbus_data();
-	make_sbus_pwm_value();
-	return 1;
-  }else{
-	return 0;
+    make_sbus_pwm_value();
   }
 }
 
@@ -49,12 +46,12 @@ void make_next_decodeable_buffer()
     static int packet_start_idx = 0;
     static int packet_end_idx = SBUS_DMA_RECEIVE_SIZE;
     static int check_idx = 0;
-    uint16_t received_data_size = 0;                                                             //¼ö½ÅÇÑ µ¥ÀÌÅÍ ¼ö
+    uint16_t received_data_size = 0;                                                             //ìˆ˜ì‹ í•œ ë°ì´í„° ìˆ˜
     
-    /* ÇöÀç ndt ±¸ÇÏ±â */
+    /* í˜„ì¬ ndt êµ¬í•˜ê¸° */
     curr_ndt = __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
 	
-	/* ÀÌÀü ndt¿Í ÇöÀç ndtÀÇ Â÷ÀÌ¿¡ µû¸¥ Ã³¸® */
+	/* ì´ì „ ndtì™€ í˜„ì¬ ndtì˜ ì°¨ì´ì— ë”°ë¥¸ ì²˜ë¦¬ */
     if(prev_ndt > curr_ndt)
     {
       received_data_size = prev_ndt - curr_ndt;
@@ -68,27 +65,27 @@ void make_next_decodeable_buffer()
       return;
     }
 
-    /* DMA·Î ¼ö½ÅµÇ´Â ¹öÆÛÀÇ ÇöÀç ÀÎµ¦½º(¸¶Áö¸·À¸·Î µé¾î¿Â ÀÎµ¦½º + 1) ±¸ÇÏ±â */
-    next_data_start_idx = (new_data_start_idx + received_data_size) % SBUS_DMA_RECEIVE_SIZE;  // ´ÙÀ½ µ¥ÀÌÅÍ¸¦ ½×À» ÀÎµ¦½º °áÁ¤
+    /* DMAë¡œ ìˆ˜ì‹ ë˜ëŠ” ë²„í¼ì˜ í˜„ì¬ ì¸ë±ìŠ¤(ë§ˆì§€ë§‰ìœ¼ë¡œ ë“¤ì–´ì˜¨ ì¸ë±ìŠ¤ + 1) êµ¬í•˜ê¸° */
+    next_data_start_idx = (new_data_start_idx + received_data_size) % SBUS_DMA_RECEIVE_SIZE;  // ë‹¤ìŒ ë°ì´í„°ë¥¼ ìŒ“ì„ ì¸ë±ìŠ¤ ê²°ì •
 
-    /* ÇöÀç µé¾î¿Â µ¥ÀÌÅÍÀÇ ½ÃÀÛ ÀÎµ¦½ººÎÅÍ ¸¶Áö¸· ÀÎµ¦½º±îÁö °Ë»ç */
+    /* í˜„ì¬ ë“¤ì–´ì˜¨ ë°ì´í„°ì˜ ì‹œì‘ ì¸ë±ìŠ¤ë¶€í„° ë§ˆì§€ë§‰ ì¸ë±ìŠ¤ê¹Œì§€ ê²€ì‚¬ */
     check_idx = new_data_start_idx;
 
-    /* ÇöÀç µé¾î¿Â µ¥ÀÌÅÍÀÇ ¸¶Áö¸· ÀÎµ¦½º±îÁö °Ë»ç¸¦ ¸¶Ä¡¸é break */
+    /* í˜„ì¬ ë“¤ì–´ì˜¨ ë°ì´í„°ì˜ ë§ˆì§€ë§‰ ì¸ë±ìŠ¤ê¹Œì§€ ê²€ì‚¬ë¥¼ ë§ˆì¹˜ë©´ break */
     while(!(check_idx == next_data_start_idx))
     {  
-      /* ½ºÅ¸Æ® ¹ÙÀÌÆ® °Ë»ç */
+      /* ìŠ¤íƒ€íŠ¸ ë°”ì´íŠ¸ ê²€ì‚¬ */
       if((sbus.new_packet_flag) && (sbus_dma_receive_buff[check_idx] == START_BYTE))
       {
 	    sbus.new_packet_flag = 0;
         packet_start_idx = check_idx;
-        packet_end_idx = (packet_start_idx + (SBUS_DATA_SIZE - 1)) % SBUS_DMA_RECEIVE_SIZE;  // µ¥ÀÌÅÍ ¹ÙÀÌÆ®¸¸Å­ Àû¿ë
+        packet_end_idx = (packet_start_idx + (SBUS_DATA_SIZE - 1)) % SBUS_DMA_RECEIVE_SIZE;  // ë°ì´í„° ë°”ì´íŠ¸ë§Œí¼ ì ìš©
       }
       
-      /* ¸µ¹öÆÛ·Î ÀÎÇÑ ÀÎµ¦½º º¯È­ Ã³¸® */
+      /* ë§ë²„í¼ë¡œ ì¸í•œ ì¸ë±ìŠ¤ ë³€í™” ì²˜ë¦¬ */
       check_idx = (check_idx+1) % SBUS_DMA_RECEIVE_SIZE;
       
-	  /* END ¹ÙÀÌÆ®°¡ µé¾î¿Ô´Ù¸é*/
+	  /* END ë°”ì´íŠ¸ê°€ ë“¤ì–´ì™”ë‹¤ë©´*/
       if((check_idx == packet_end_idx) && ((sbus_dma_receive_buff[check_idx] & 0x04) == END_BYTE))
       {
 		if(packet_start_idx < packet_end_idx)
@@ -106,7 +103,7 @@ void make_next_decodeable_buffer()
       }
     }
     
-    /* ÇöÀç °ªÀ» ÀÌÀü °ªÀ¸·Î ¼¼ÆÃ */
+    /* í˜„ì¬ ê°’ì„ ì´ì „ ê°’ìœ¼ë¡œ ì„¸íŒ… */
     prev_ndt = curr_ndt;
     new_data_start_idx = next_data_start_idx;
 }
