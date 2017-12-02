@@ -13,15 +13,16 @@
 #define COUNTOF(__BUFFER__) (sizeof(__BUFFER__)/sizeof(*(__BUFFER__)))
 #define BUFFERSIZE(buffer) (COUNTOF(buffer))
 
-#define SBUS_DATA_SIZE 25
+#define SBUS_PACKET_SIZE      25
 #define SBUS_DMA_RECEIVE_SIZE 1024
-#define START_BYTE 0x0f
-#define END_BYTE 0x04
+#define START_BYTE            0x0f
+#define END_BYTE              0x04
 
 typedef struct _SBUS
 { 
-  uint8_t         new_packet_flag;
-  uint8_t         packet_ok_flag;
+  uint8_t     new_packet_flag;
+  uint8_t     packet_ok_flag;
+  uint16_t    count;
 }SBUS;
 
 // Initialize SBUS struct
@@ -45,8 +46,8 @@ void generate_sbus_pwm(TIM_HandleTypeDef*);
 // extern variables
 extern SBUS sbus;
 extern uint8_t sbus_dma_receive_buff[SBUS_DMA_RECEIVE_SIZE];
-extern uint8_t sbus_packet_buff[SBUS_DATA_SIZE];
-
+extern uint8_t sbus_packet_buff[SBUS_PACKET_SIZE];
+extern uint16_t sbus_data_buff[18];
 // Buffer of PWM value should be controlled
 extern uint16_t sbus_pwm_pulse[6];
 #endif

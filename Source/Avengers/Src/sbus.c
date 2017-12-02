@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "stm32f4xx_hal.h"
+#include "mti.h"
 #include "sbus.h"
 #include "main.h"
 #include "tim.h"
@@ -16,8 +17,8 @@
 
 SBUS sbus;
 uint8_t sbus_dma_receive_buff[SBUS_DMA_RECEIVE_SIZE];
-uint8_t sbus_packet_buff[SBUS_DATA_SIZE];
-uint16_t data_buff[18];
+uint8_t sbus_packet_buff[SBUS_PACKET_SIZE];
+uint16_t sbus_data_buff[18];
 uint16_t sbus_pwm_pulse[6];
 
 extern DMA_HandleTypeDef hdma_usart1_rx;
@@ -29,12 +30,15 @@ void read_sbus()
   {
     decode_sbus_data();
     make_sbus_pwm_value();
+    sbus.count++;
   }
 }
 
-void init_sbus(){
+void init_sbus()
+{
   sbus.new_packet_flag = 1;
   sbus.packet_ok_flag = 0;
+  sbus.count = 0;
 }
 
 void make_next_decodeable_buffer()
@@ -79,7 +83,7 @@ void make_next_decodeable_buffer()
       {
 	    sbus.new_packet_flag = 0;
         packet_start_idx = check_idx;
-        packet_end_idx = (packet_start_idx + (SBUS_DATA_SIZE - 1)) % SBUS_DMA_RECEIVE_SIZE;  // 데이터 바이트만큼 적용
+        packet_end_idx = (packet_start_idx + (SBUS_PACKET_SIZE - 1)) % SBUS_DMA_RECEIVE_SIZE;  // 데이터 바이트만큼 적용
       }
       
       /* 링버퍼로 인한 인덱스 변화 처리 */
@@ -88,7 +92,7 @@ void make_next_decodeable_buffer()
 	  /* END 바이트가 들어왔다면*/
       if((check_idx == packet_end_idx) && ((sbus_dma_receive_buff[check_idx] & 0x04) == END_BYTE))
       {
-		if(packet_start_idx < packet_end_idx)
+        if(packet_start_idx < packet_end_idx)
         {              
           memcpy(sbus_packet_buff, (sbus_dma_receive_buff + packet_start_idx), ((packet_end_idx - packet_start_idx) + 1));
         }
@@ -110,28 +114,31 @@ void make_next_decodeable_buffer()
 
 void decode_sbus_data()
 {
-  uint8_t i;
-  
   sbus.packet_ok_flag = 0;
   
-  data_buff[0] = (uint16_t)sbus_packet_buff[1] + (uint16_t)((sbus_packet_buff[2]&0x07)<<8)-4;
-  data_buff[1] = (uint16_t)((sbus_packet_buff[2]&0xf8)>>3) + (uint16_t)((sbus_packet_buff[3]&0x3f)<<5);
-  data_buff[2] = (uint16_t)((sbus_packet_buff[3]&0xc0)>>6) + (uint16_t)(sbus_packet_buff[4]<<2) + (uint16_t)((sbus_packet_buff[5]&0x01)<<10);
-  data_buff[3] = (uint16_t)((sbus_packet_buff[5]&0xfe)>>1) + (uint16_t)((sbus_packet_buff[6]&0x0f)<<7);
-  data_buff[4] = (uint16_t)((sbus_packet_buff[6]&0xf0)>>4) + (uint16_t)((sbus_packet_buff[7]&0x7f)<<4);
-  data_buff[5] = (uint16_t)((sbus_packet_buff[7]&0x80)>>7) + (uint16_t)(sbus_packet_buff[8]<<1) + (uint16_t)((sbus_packet_buff[9]&0x03)<<9);
-  data_buff[6] = (uint16_t)((sbus_packet_buff[9]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[10]&0x1f)<<6);
+  sbus_data_buff[0] = (uint16_t)sbus_packet_buff[1] + (uint16_t)((sbus_packet_buff[2]&0x07)<<8);
+  sbus_data_buff[1] = (uint16_t)((sbus_packet_buff[2]&0xf8)>>3) + (uint16_t)((sbus_packet_buff[3]&0x3f)<<5);
+  sbus_data_buff[2] = (uint16_t)((sbus_packet_buff[3]&0xc0)>>6) + (uint16_t)(sbus_packet_buff[4]<<2) + (uint16_t)((sbus_packet_buff[5]&0x01)<<10);
+  sbus_data_buff[3] = (uint16_t)((sbus_packet_buff[5]&0xfe)>>1) + (uint16_t)((sbus_packet_buff[6]&0x0f)<<7);
+  sbus_data_buff[4] = (uint16_t)((sbus_packet_buff[6]&0xf0)>>4) + (uint16_t)((sbus_packet_buff[7]&0x7f)<<4);
+  sbus_data_buff[5] = (uint16_t)((sbus_packet_buff[7]&0x80)>>7) + (uint16_t)(sbus_packet_buff[8]<<1) + (uint16_t)((sbus_packet_buff[9]&0x03)<<9);
+  sbus_data_buff[6] = (uint16_t)((sbus_packet_buff[9]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[10]&0x1f)<<6);
+  
+  //printf("%d %d %d %d %d %d %d\r\n", data_buff[0], data_buff[1], data_buff[2], data_buff[3], data_buff[4], data_buff[5], data_buff[6]);
 }
 
-void make_sbus_pwm_value(){
-  const float min_duty = 4598;
-  const float max_duty = 8126;
-  const float max_pwm = 1696;
-  const float min_pwm = 352;
+void make_sbus_pwm_value()
+{
+  const float min_duty = 4598.0;
+  const float max_duty = 8126.0;
+  const float max_pwm = 1696.0;
+  const float min_pwm = 352.0;
   int i;
  
   for(i = 0; i < 4; i++){
-    sbus_pwm_pulse[i] = data_buff[i] / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696;
+      //sbus_pwm_pulse[i] = (uint16_t)( / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
+    //sbus_pwm_pulse[i] = (uint16_t)(data_buff[i] / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
+    
   }
 }
 

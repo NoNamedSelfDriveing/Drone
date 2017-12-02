@@ -50,7 +50,8 @@
 #include "gps.h"
 #include "gy63.h"
 #include "sbus.h"
-    
+#include "control.h"
+#include "mixer.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -73,7 +74,7 @@ void initialize();
 /* USER CODE END 0 */
 
 int main(void)
-{       
+{
 
   /* USER CODE BEGIN 1 */
   
@@ -110,6 +111,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   /* 모든 device 초기화 */
   initialize();
+  printf("%d", sbus_packet_buff[0]);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -193,10 +195,11 @@ void initialize()
 {
   init_tim();
   init_uart_dma();
-  init_sbus_pwm();
   init_sbus();
-  init_gy63();
   init_mti();
+  init_gps();
+  init_gain();
+  //init_gy63();
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -205,17 +208,27 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* 1Hz */
   if(htim->Instance == TIM7)
   {
-    printf("%d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count);
+    printf("%d %d %d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count, gps_state.posllh_loop_counter, gps_state.velned_loop_counter);
     //number = 0;
     mti_state.count = 0;
     sbus.count = 0;
-    rx_size = 0;
+    gps_state.posllh_loop_counter = 0;
+    gps_state.velned_loop_counter = 0;
   }
   /* 1000Hz */
   else if(htim->Instance == TIM6)
   {
       read_mti();
       read_sbus();
+      read_gps();
+      control_cmd();
+      if(mti_state.decode_finish_flag)
+      {
+        mti_state.decode_finish_flag = 0;
+        controller();
+        mixer();
+      }
+      
 //    read_mti();
 //    read_sbus();
 //    
@@ -248,27 +261,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //    }
     
   }
-}
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{ 
-  /* mti */
-  if(huart == &huart3)
-  {
-    //receive_mti_packet();
-    
-  }
-  
-  /*
-  if(huart == &huart1)
-  {
-    memcpy(sbus.uart_rx_stacking_buff+sbus.uart_rx_stacking_idx, sbus.uart_rx_receive_buff, sizeof(uint8_t)*DMA_RECEIVE_SIZE);
-    sbus.uart_rx_stacking_idx += DMA_RECEIVE_SIZE;
-  }
-  */
-  
-  
-  
 }
 
 #ifdef __GNUC__

@@ -9,7 +9,7 @@ MTI mti;
 
 uint8_t mti_rx_flag;
 uint8_t mti_checksum_flag;
-uint8_t mti_rx_buff[MTI_DMA_RX_SIZE];
+uint8_t mti_dma_rx_buff[MTI_DMA_RX_SIZE];
 uint8_t mti_packet_buff[MTI_PACKET_SIZE];
 int rx_size = 0;
 
@@ -19,6 +19,7 @@ void init_mti()
   mti_state.new_packet_flag = 1;
   mti_state.packet_rx_flag = 0;
   mti_state.checksum_flag = 0;
+  mti_state.decode_finish_flag = 0;
   mti_state.count = 0;
 }
 
@@ -78,7 +79,8 @@ void receive_mti_packet()
     while(!(next_check_idx == next_data_start_idx))
     {
       /* 스타트 바이트 검사 */
-      if((mti_state.new_packet_flag) && ((mti_rx_buff[check_idx] == 0xfa) && (mti_rx_buff[next_check_idx] == 0xff)))
+      if((mti_state.new_packet_flag) && ((mti_dma_rx_buff[check_idx] == 0xfa) && (mti_dma_rx_buff[next_check_idx] == 0xff)))    //위험성 존재 코드
+      //if((mti_dma_rx_buff[check_idx] == 0xfa) && (mti_dma_rx_buff[next_check_idx] == 0xff))
       {
         mti_state.new_packet_flag = 0;
         packet_start_idx = check_idx;
@@ -96,12 +98,12 @@ void receive_mti_packet()
             온전한 한 패킷만을 담아놓는 버퍼로 복사 */
         if(packet_start_idx < packet_end_idx)
         {               
-          memcpy(mti_packet_buff, (mti_rx_buff + packet_start_idx), ((packet_end_idx - packet_start_idx) + 1));
+          memcpy(mti_packet_buff, (mti_dma_rx_buff + packet_start_idx), ((packet_end_idx - packet_start_idx) + 1));
         }
         else if(packet_start_idx > packet_end_idx)
         {
-          memcpy(mti_packet_buff, (mti_rx_buff + packet_start_idx), (MTI_DMA_RX_SIZE - packet_start_idx));
-          memcpy((mti_packet_buff + (MTI_DMA_RX_SIZE - packet_start_idx)), mti_rx_buff, (packet_end_idx + 1));
+          memcpy(mti_packet_buff, (mti_dma_rx_buff + packet_start_idx), (MTI_DMA_RX_SIZE - packet_start_idx));
+          memcpy((mti_packet_buff + (MTI_DMA_RX_SIZE - packet_start_idx)), mti_dma_rx_buff, (packet_end_idx + 1));
         }
         mti_state.new_packet_flag = 1;
         mti_state.packet_rx_flag = 1;
@@ -226,9 +228,9 @@ void decode_mti_packet()
   mti_data.buff[74] = mti_packet_buff[95];
   mti_data.buff[75] = mti_packet_buff[94];
   
-  mti.euler[0] = mti_data.value[0];
+  mti.euler[0] = -mti_data.value[0];
   mti.euler[1] = mti_data.value[1];
-  mti.euler[2] = mti_data.value[2];
+  mti.euler[2] = -mti_data.value[2];
   
   mti.acc[0] = mti_data.value[3];
   mti.acc[1] = mti_data.value[4];
@@ -238,9 +240,9 @@ void decode_mti_packet()
   mti.delta_v[1] = mti_data.value[7];
   mti.delta_v[2] = mti_data.value[8];
    
-  mti.pqr[0] = mti_data.value[9];
-  mti.pqr[1] = mti_data.value[10];
-  mti.pqr[2] = mti_data.value[11];
+  mti.pqr[0] = -mti_data.value[9]*180/PI;
+  mti.pqr[1] = mti_data.value[10]*180/PI;
+  mti.pqr[2] = -mti_data.value[11]*180/PI;
   
   mti.delta_q[0] = mti_data.value[12];
   mti.delta_q[1] = mti_data.value[13];
@@ -251,6 +253,7 @@ void decode_mti_packet()
   mti.mag[1] = mti_data.value[17];
   mti.mag[2] = mti_data.value[18];
   
+  mti_state.decode_finish_flag = 1;
   mti_state.count++;
   //printf("%4f %4f %4f\r\n", mti.euler[0], mti.euler[1], mti.euler[2]);
   //printf("%4f %4f %4f\r\n", mti.acc[0], mti.acc[1], mti.acc[2]);
