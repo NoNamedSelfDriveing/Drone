@@ -143,7 +143,7 @@ void decode_xbee_packet()
    
   }
   
-  }
+
   
 
   printf("%4d, %4f \r\n", temp, xbee_data.value);

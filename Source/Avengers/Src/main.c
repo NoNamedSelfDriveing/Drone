@@ -199,7 +199,8 @@ void initialize()
   init_sbus();
   init_mti();
   init_gps();
-  init_flash)();
+  init_flash();
+  readGain_All();
   //init_gy63();
 }
 

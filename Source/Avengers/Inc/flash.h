@@ -10,6 +10,7 @@
 #define ADDRESS_YAW_P    0x0800C018
 #define ADDRESS_YAW_I    0x0800C01C
 #define ADDRESS_YAW_D    0x0800C020
+#define ADDRESS_CHECK    0x0800C024
 
 #define PITCH_P     0
 #define PITCH_I     1
@@ -22,7 +23,7 @@
 #define YAW_D       8
 
 typedef union value{
-  uint32_t iValue;
+  int iValue;
   float fValue;
 }value;
 
