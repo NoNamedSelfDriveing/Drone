@@ -48,7 +48,9 @@
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "sbus.h"
+#include "mti.h"
+#include "gps.h"
 /* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart1;
@@ -59,6 +61,7 @@ extern UART_HandleTypeDef huart6;
 /* USER CODE BEGIN Private defines */
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart3_rx;
+extern DMA_HandleTypeDef hdma_usart6_rx;
 /* USER CODE END Private defines */
 
 extern void _Error_Handler(char *, int);
@@ -69,7 +72,7 @@ void MX_USART3_UART_Init(void);
 void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void init_uart_dma();
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

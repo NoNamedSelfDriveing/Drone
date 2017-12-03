@@ -1,7 +1,7 @@
 /**********************************************************************
  *     sbus.c                                                         *
  *     written by Soomin Lee (MagmaTart)                              *
- *     Last modify date : 2017.11.23                                  *
+ *     Last modify date : 2017.11.27                                  *
  *     Description : Implements of Functions to use SBUS protocol.    *
  **********************************************************************/
 
@@ -12,9 +12,24 @@
 #include "main.h"
 #include "tim.h"
 #include "gpio.h"
+#include "usart.h"
 
 SBUS sbus;
 SBUS_pwm sbus_pwm;
+uint8_t dma_receive_buff[DMA_RECEIVE_SIZE];
+uint8_t packet_buff[SBUS_DATA_SIZE];
+uint16_t data_buff[18];
+
+extern DMA_HandleTypeDef hdma_usart1_rx;
+
+void read_sbus()
+{
+  make_next_decodeable_buffer();
+  if(sbus.packet_ok_flag)
+  {
+    decode_sbus_data();
+  }
+}
 
 void init_sbus_pwm(){
   sbus_pwm.min_duty = 4598;
@@ -25,85 +40,149 @@ void init_sbus_pwm(){
 }
 
 void init_sbus(){
-  sbus.uart_rx_stacking_idx = 0;
-  sbus.sb_index_saver = 0;
-  sbus.start_flag = 0;
-}
+  sbus.prev_ndt = DMA_RECEIVE_SIZE;
+  sbus.curr_ndt = 0;
+  sbus.received_size = 0;
 
-void make_next_decodeable_buffer()
-{  
-  sbus.uart_rx_stacking_idx = 0;
-  memcpy(sbus.uart_rx_decoding_buff, sbus.remained_after_decoding, sizeof(uint8_t) * sbus.sb_index_saver);
-  memcpy(sbus.uart_rx_decoding_buff + sbus.sb_index_saver, sbus.uart_rx_stacking_buff, sizeof(uint8_t) * (STACKING_SIZE - sbus.sb_index_saver) );
-}
-
-void check_sbus_data_packet()
-{ 
-  uint8_t sb_index = 0;        // Start byte index
-  uint8_t is_index_over = 0;
-  uint8_t uart_rx_row_index = 0;
-
-  while(sb_index < STACKING_SIZE){
-
-  // Increase index until find Start byte
-    if(sbus.uart_rx_decoding_buff[sb_index] != START_BYTE && sbus.start_flag == 0)
-    {
-      sbus.start_flag = 0;
-      sb_index++;
-      continue;
-    }
-
-    if(sbus.uart_rx_decoding_buff[sb_index] == START_BYTE && sbus.start_flag == 0)
-    {
-      // Search to full packet
-      while( !(sbus.uart_rx_decoding_buff[sb_index] == START_BYTE && sbus.uart_rx_decoding_buff[sb_index + (UART_DATA_SIZE-1)]%16 == END_BYTE) )
-      {
-        sb_index++;
-        if(sb_index + (UART_DATA_SIZE-1) > STACKING_SIZE-1){
-          is_index_over = 1;
-          break;
-        }
-      }
-
-      if(is_index_over)
-        break;
-    
-      sbus.start_flag = 1;
-    }
+  sbus.front = 0;
+  sbus.rear = 0;
   
-    // If start flag is on
-    if(sbus.start_flag)
-    {
-	  memcpy((sbus.uart_rx_buff[uart_rx_row_index]), (sbus.uart_rx_decoding_buff+sb_index), sizeof(uint8_t)*UART_DATA_SIZE);
-  	  uart_rx_row_index++;
+  sbus.new_data_start_idx = 0;
+  sbus.next_data_start_idx = 0;
+  sbus.packet_start_idx = 0;
+  sbus.packet_end_idx = DMA_RECEIVE_SIZE;
+  sbus.new_packet_flag = 1;
+  sbus.packet_ok_flag = 0;
+  sbus.count = 0;
+}
 
-     // location of next packet's start byte
-      sb_index++;
-  	  sbus.start_flag = 0;
-    }
+/*
+void update_buffer(){
+  uint16_t subtract_ndt;
+  sbus.prev_ndt = sbus.curr_ndt;
+  sbus.curr_ndt = __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
+  
+  subtract_ndt = sbus.prev_ndt - sbus.curr_ndt;
+  
+  if(sbus.curr_ndt < sbus.prev_ndt){
+    sbus.received_size += subtract_ndt;
+
+    sbus.rear += subtract_ndt;
+    sbus.rear = sbus.rear >= DMA_RECEIVE_SIZE ? sbus.rear - DMA_RECEIVE_SIZE : sbus.rear;
+	
+	//printf("RECV : %d", sbus.received_size);	
   }
+  else if(sbus.curr_ndt > sbus.prev_ndt){
+	sbus.received_size += (subtract_ndt + DMA_RECEIVE_SIZE);
+	
+  	sbus.rear += (subtract_ndt + DMA_RECEIVE_SIZE);
+    sbus.rear = sbus.rear >= DMA_RECEIVE_SIZE ? sbus.rear - DMA_RECEIVE_SIZE : sbus.rear;
+	
+	//printf("RECV : %d", sbus.received_size);
+  }
+  printf("");
+}
+*/
+void make_next_decodeable_buffer()
+{
+  //static int sbus.prev_ndt = DMA_RECEIVE_SIZE, sbus.curr_ndt = 0;                                //이전 ndt, 현재 ndt
+    uint16_t i;                                                            // 버퍼의 내용을 검사할 인덱스와 그 옆의 인덱스                                                                                         
+    uint16_t received_data_size = 0;                                                             //수신한 데이터 수
+    
+    /* 현재 ndt 구하기 */
+    sbus.curr_ndt = __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
 
-  memcpy(sbus.remained_after_decoding, sbus.uart_rx_decoding_buff + sb_index, sizeof(uint8_t) * (STACKING_SIZE - sb_index)); 
-  memset(sbus.uart_rx_decoding_buff, 0, sizeof(uint8_t)*STACKING_SIZE);
-  
-  sbus.uart_rx_row_idx = uart_rx_row_index;
-  sbus.sb_index_saver = (STACKING_SIZE - sb_index);
+    /* 이전 ndt와 현재 ndt의 차이에 따른 처리 */
+    // 여기 돌려보고 안되면 sbus.prev, sbus.curr로 변경
+    if(sbus.prev_ndt > sbus.curr_ndt)
+    {
+      received_data_size = sbus.prev_ndt - sbus.curr_ndt;
+    }
+    else if(sbus.prev_ndt < sbus.curr_ndt)
+    {
+      received_data_size = sbus.prev_ndt + (DMA_RECEIVE_SIZE - sbus.curr_ndt);
+    }
+    else
+    {
+      return;
+    }
+
+    /* DMA로 수신되는 버퍼의 현재 인덱스(마지막으로 들어온 인덱스 + 1) 구하기 */
+    //rx_size += received_data_size;
+	//sbus.received_size += received_data_size;
+    sbus.next_data_start_idx = (sbus.new_data_start_idx + received_data_size) % DMA_RECEIVE_SIZE;  // 다음 데이터를 쌓을 인덱스 결정
+
+    /* 현재 들어온 데이터의 시작 인덱스부터 마지막 인덱스까지 검사 */
+    //check_idx = new_data_start_idx -1 ;     // 근재같은경우 스타트 바이트가 2개이므로, 바이트 두개가 나뉘어져 들어오는 경우를 위한 처리
+    sbus.check_idx = sbus.new_data_start_idx;
+    //next_check_idx = check_idx + 1;
+
+    // 음수처리
+//    if(sbus.check_idx == -1) 
+//    {
+//      sbus.check_idx = DMA_RECEIVE_SIZE - 1;
+//      //next_check_idx = 0;
+//    }
+
+    /* 현재 들어온 데이터의 마지막 인덱스까지 검사를 마치면 break */
+    while(!(sbus.check_idx == sbus.next_data_start_idx))
+    {  
+      /* 스타트 바이트 검사 */
+      if((sbus.new_packet_flag) && (dma_receive_buff[sbus.check_idx] == START_BYTE))
+      {
+	sbus.new_packet_flag = 0;
+        sbus.packet_start_idx = sbus.check_idx;
+        sbus.packet_end_idx = (sbus.packet_start_idx + (SBUS_DATA_SIZE - 1)) % DMA_RECEIVE_SIZE;  // 데이터 바이트만큼 적용
+      }
+      
+      /* 링버퍼로 인한 인덱스 변화 처리 */
+      sbus.check_idx = (sbus.check_idx+1) % DMA_RECEIVE_SIZE;
+      //next_check_idx = (check_idx+1) % DMA_RECEIVE_SIZE;
+      
+	  /* END 바이트가 들어왔다면*/
+      if((sbus.check_idx == sbus.packet_end_idx) && ((dma_receive_buff[sbus.check_idx] & 0x04) == END_BYTE))
+      {
+			/* 패킷의 시작 , 끝 인덱스의 차이에 따른 처리
+            온전한 한 패킷만을 담아놓는 버퍼로 복사 */
+        if(sbus.packet_start_idx < sbus.packet_end_idx)
+        {              
+          memcpy(packet_buff, (dma_receive_buff + sbus.packet_start_idx), ((sbus.packet_end_idx - sbus.packet_start_idx) + 1));
+        }
+        else if(sbus.packet_start_idx > sbus.packet_end_idx)
+        {
+          memcpy(packet_buff, (dma_receive_buff + sbus.packet_start_idx), (DMA_RECEIVE_SIZE - sbus.packet_start_idx));
+          memcpy((packet_buff + (DMA_RECEIVE_SIZE - sbus.packet_start_idx)), dma_receive_buff, (sbus.packet_end_idx + 1));
+        }
+		
+        sbus.new_packet_flag = 1;
+        sbus.packet_ok_flag = 1;
+      }
+    }
+    
+    /* 현재 값을 이전 값으로 세팅 */
+    sbus.prev_ndt = sbus.curr_ndt;
+    sbus.new_data_start_idx = sbus.next_data_start_idx;
+	//printf("");
 }
 
 void decode_sbus_data()
-{ 
-  uint8_t row_index = 0;
-  for(row_index = 0 ; row_index < sbus.uart_rx_row_idx ; row_index++)
-  {
-    sbus.data_buff[row_index][0] = sbus.uart_rx_buff[row_index][1] + (uint16_t)((sbus.uart_rx_buff[row_index][2]&0x07)<<8);
-    sbus.data_buff[row_index][1] = (uint16_t)((sbus.uart_rx_buff[row_index][2]&0xf8)>>3) + (uint16_t)((sbus.uart_rx_buff[row_index][3]&0x3f)<<5);
-    sbus.data_buff[row_index][2] = (uint16_t)((sbus.uart_rx_buff[row_index][3]&0xc0)>>6) + (uint16_t)(sbus.uart_rx_buff[row_index][4]<<2) + (uint16_t)((sbus.uart_rx_buff[row_index][5]&0x01)<<10);
-    sbus.data_buff[row_index][3] = (uint16_t)((sbus.uart_rx_buff[row_index][5]&0xfe)>>1) + (uint16_t)((sbus.uart_rx_buff[row_index][6]&0x0f)<<7);
-    sbus.data_buff[row_index][4] = (uint16_t)((sbus.uart_rx_buff[row_index][6]&0xf0)>>4) + (uint16_t)((sbus.uart_rx_buff[row_index][7]&0x7f)<<4);
-    sbus.data_buff[row_index][5] = (uint16_t)((sbus.uart_rx_buff[row_index][7]&0x80)>>7) + (uint16_t)(sbus.uart_rx_buff[row_index][8]<<1) + (uint16_t)((sbus.uart_rx_buff[row_index][9]&0x03)<<9);
-    sbus.data_buff[row_index][6] = (uint16_t)((sbus.uart_rx_buff[row_index][9]&0xfc)>>2) + (uint16_t)((sbus.uart_rx_buff[row_index][10]&0x1f)<<6);
-  }
-  //printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\r", sbus.data_buff[0][0], sbus.data_buff[0][1], sbus.data_buff[0][2], sbus.data_buff[0][3], sbus.data_buff[0][4], sbus.data_buff[0][5], sbus.data_buff[0][6]);
+{
+  uint8_t i;
+  
+  sbus.packet_ok_flag = 0;
+  
+  data_buff[0] = (uint16_t)packet_buff[1] + (uint16_t)((packet_buff[2]&0x07)<<8);
+  data_buff[1] = (uint16_t)((packet_buff[2]&0xf8)>>3) + (uint16_t)((packet_buff[3]&0x3f)<<5);
+  data_buff[2] = (uint16_t)((packet_buff[3]&0xc0)>>6) + (uint16_t)(packet_buff[4]<<2) + (uint16_t)((packet_buff[5]&0x01)<<10);
+  data_buff[3] = (uint16_t)((packet_buff[5]&0xfe)>>1) + (uint16_t)((packet_buff[6]&0x0f)<<7);
+  data_buff[4] = (uint16_t)((packet_buff[6]&0xf0)>>4) + (uint16_t)((packet_buff[7]&0x7f)<<4);
+  data_buff[5] = (uint16_t)((packet_buff[7]&0x80)>>7) + (uint16_t)(packet_buff[8]<<1) + (uint16_t)((packet_buff[9]&0x03)<<9);
+  data_buff[6] = (uint16_t)((packet_buff[9]&0xfc)>>2) + (uint16_t)((packet_buff[10]&0x1f)<<6);
+
+  //printf("%.4d %.4d %.4d %.4d %.4d %.4d %.4d\n\n\r", data_buff[0], data_buff[1], data_buff[2], data_buff[3], data_buff[4], data_buff[5], data_buff[6]);
+  //memset(packet_buff, 0, SBUS_DATA_SIZE);
+  sbus.count++;
+  //printf("%d %d\n\r", sbus.prev_ndt, sbus.curr_ndt);
 }
 
 void sbus_pwm_make_with_value(TIM_HandleTypeDef * htim){
@@ -111,7 +190,7 @@ void sbus_pwm_make_with_value(TIM_HandleTypeDef * htim){
   uint16_t pulse[4];
  
   for(i = 0; i < 4; i++){
-    pulse[i] = sbus.data_buff[0][i] / ((sbus_pwm.max_pwm - sbus_pwm.min_pwm) / (sbus_pwm.max_duty - sbus_pwm.min_duty)) + 3696; 
+    pulse[i] = sbus.data_buff[i] / ((sbus_pwm.max_pwm - sbus_pwm.min_pwm) / (sbus_pwm.max_duty - sbus_pwm.min_duty)) + 3696; 
   }
   
   htim -> Instance -> CCR1 = pulse[0];

@@ -7,12 +7,10 @@
 #include "math.h"
 #include "string.h"
 
-#define RECEIVE_BUFF_SIZE 8
-#define GPS_BUFF_SIZE 1024
+#define GPS_DMA_BUFF_SIZE 1024
+#define GPS_PACKET_SIZE 80
 #define NAV_POSLLH_SIZE 36
-#define NAV_POSLLH_LENGTH 28
 #define NAV_VELNED_SIZE 44
-#define NAV_VELNED_LENGTH 36
 
 #define PI 3.141592653589
 
@@ -29,44 +27,43 @@
 #define LATITUDE_SECOND_DISTANCE 30.8
 
 
-typedef union _GPS_POSLLH_UNION
-{
-	uint8_t       buff[4];
-	float         data;
-	int           data_int;
-
-}PosllhUnion;
-
-typedef union _GPS_VELNED_UNION
-{
-	uint8_t       buff[4];
-	float         data;
-	int           data_int;
-
-}VelnedUnion;
-
 typedef struct _GPS_COMMON
 {
-  uint8_t	data_dma_receive_buff[RECEIVE_BUFF_SIZE];
-  uint8_t       packet_rx_data_buff[GPS_BUFF_SIZE];
-  uint8_t	rx_data_buff[GPS_BUFF_SIZE];
-
-  uint8_t	CK_A;
-  uint8_t	CK_B;
-
-  int           packet_complete_flag;
-  int           check_sum_complete_flag;
-  int           rx_buff_idx;
-  int           start_packet_idx;
-  int           read_rx_pause;
-  int           buff_idx;
-
-  int	      Gps_data_buff[9];
-
+  uint8_t       new_packet_flag;
+  uint8_t       packet_complete_flag;
+  uint8_t       posllh_checksum_flag;
+  uint8_t       velned_checksum_flag;
+  uint8_t       check_flag;
+  uint8_t       count;
+  
+  int           received_size;
+  int           posllh_loop_counter;
+  int           velned_loop_counter;
+  
 }GpsCommon;
+
+typedef union _GPS_UNION
+{
+  uint8_t       buff[4];
+  float         data;
+  int           data_int;
+}GpsUnion; 
 
 typedef struct _GPS_POSLLH
 {
+  int           packet_complete_flag;
+  int           check_sum_complete_flag;
+  
+  int           start_packet_idx;
+  int           read_rx_waiting;
+  int           posllh_buff_idx;
+  int           rx_data_buff_idx;
+  int           dma_data_buff_idx;
+  
+  int           read_packet_count;
+  
+  int           posllh_data_buff[7];
+  
   float         time;
   float         ellipsoid;
   float         mean_sealevel;
@@ -100,6 +97,8 @@ typedef struct _GPS_POSLLH
 
 typedef struct _GPS_VELNED
 {
+  int           velned_data_buff[9];
+  
   float         vel_N;
   float         vel_E;
   float         vel_D;
@@ -110,20 +109,22 @@ typedef struct _GPS_VELNED
 
   float         sAcc;           //speed accuracy estimate
   float         cAcc;           //course/heading accuracy estimate
-
 }GpsVelned;
 
-extern		GpsCommon gps_posllh;
-extern		GpsCommon gps_velned;
-extern		GpsPosllh posllh_data;
-extern		GpsVelned velned_data;
-extern          PosllhUnion posllh_union;
-extern		VelnedUnion velned_union;
+extern		GpsCommon gps_state;
+extern          GpsPosllh posllh_data;
+extern          GpsVelned velned_data;
+extern          GpsUnion posllh_union;
+extern          GpsUnion velned_union;
 
-int             calculate_gps_check_sum(struct GpsCommon gps_protocol, int NAV_SIZE);
+extern uint8_t data_dma_receive_buff[GPS_DMA_BUFF_SIZE];
+extern uint8_t gps_packet_buff[GPS_PACKET_SIZE];
+
 void            gps_init();
+void            read_gps();
+void            receive_gps_packet();
+void            check_gps_packet();
 void            decode_gps_posllh_packet();
-void		decode_gps_velned_packet();
-void            check_gps_packet(struct GpsCommon gps_protocol);
+void            decode_gps_velned_packet();
 
 #endif

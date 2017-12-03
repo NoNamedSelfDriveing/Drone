@@ -69,7 +69,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                 
 
 /* USER CODE BEGIN Prototypes */
-
+void init_tim();
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

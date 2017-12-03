@@ -35,27 +35,30 @@
   *
   ******************************************************************************
   */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
 #include "dma.h"
+#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
+#include <string.h>
+#include "mti.h"
 #include "gps.h"
-#include "string.h"
+#include "gy63.h"
+#include "sbus.h"
+#include "control.h"
+#include "mixer.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint16_t loop_counter;
-int count = 0;
-
+    
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,7 +66,7 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+void initialize();
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -74,6 +77,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -98,25 +102,32 @@ int main(void)
   MX_TIM6_Init();
   MX_TIM7_Init();
   MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
   MX_USART6_UART_Init();
+  MX_I2C1_Init();
+  MX_USART1_UART_Init();
+  MX_TIM1_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim6);
-  HAL_TIM_Base_Start_IT(&htim7);
-  gps_init();
-  HAL_UART_Receive_DMA(&huart6, data_dma_receive_buff, GPS_DMA_BUFF_SIZE);
+  /* 모든 device 초기화 */
+  initialize();
+  printf("%d", sbus_packet_buff[0]);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  
+  
   while (1)
   {
+    //read_gy63_adc(CMD_ADC_4096);
+    //calculate_gy63_altitude();
+    //HAL_Delay(100);
     
-  }
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
+  }
   /* USER CODE END 3 */
 
 }
@@ -137,12 +148,11 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 168;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
@@ -157,7 +167,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV8;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
@@ -178,40 +188,100 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/* All of things initialize function */
+/* 모든 device 초기화 하는 함수 */
+void initialize()
+{
+  init_tim();
+  init_uart_dma();
+  init_sbus();
+  init_mti();
+  init_gps();
+  init_gain();
+  //init_gy63();
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if(htim->Instance==TIM7)
+  static uint8_t idx;
+  /* 1Hz */
+  if(htim->Instance == TIM7)
   {
-    printf("test %.4d %.4d %.4d %.4d \r\n",HAL_GetTick(), gps_state.posllh_loop_counter, gps_state.velned_loop_counter, count);
-
+    printf("%d %d %d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count, gps_state.posllh_loop_counter, gps_state.velned_loop_counter);
+    //number = 0;
+    mti_state.count = 0;
+    sbus.count = 0;
     gps_state.posllh_loop_counter = 0;
     gps_state.velned_loop_counter = 0;
-    count = 0;
   }
-  else if(htim->Instance==TIM6)
+  /* 1000Hz */
+  else if(htim->Instance == TIM6)
   {
-    read_gps();
-    count++;
+      read_mti();
+      read_sbus();
+      read_gps();
+      control_cmd();
+      if(mti_state.decode_finish_flag)
+      {
+        mti_state.decode_finish_flag = 0;
+        controller();
+        mixer();
+      }
+      
+//    read_mti();
+//    read_sbus();
+//    
+//    controll_cmd();
+//    controller();
+//    mixer();
+//    
+//    write_pwm();
+    
+//    receive_mti_packet();
+//    if(mti_state.packet_rx_flag)
+//    {
+//      check_mti_packet();
+//      if(mti_state.checksum_flag)
+//      {
+//        decode_mti_packet();
+//        mti_state.count++;
+//      }
+//    }
+    
+//    update_buffer();
+//    if(make_next_decodeable_buffer()){
+////      decode_sbus_data();
+//    }
+//    
+//    if(++idx >=10){
+//      //printf("%.4f %.4d\r\n",mti.euler[0], sbus.data_buff[2]);
+//      printf("HELLO WORLD!\n\r");
+//      idx = 0;
+//    }
     
   }
 }
 
 #ifdef __GNUC__
-/* With GCC, small printf (option LD Linker->Libraries->Small printf
-set to 'Yes') calls __io_putchar() */
-#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+  /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
+     set to 'Yes') calls __io_putchar() */
+  #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #else
-#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+  #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif /* __GNUC__ */
+/**
+  * @brief  Retargets the C library printf function to the USART.
+  * @param  None
+  * @retval None
+  */
 PUTCHAR_PROTOTYPE
 {
-  /* Place your implementation of fputc here */
-  /* e.g. write a character to the EVAL_COM1 and Loop until the end of transmission */
+  /* write a character to the uart1 and Loop until the end of transmission */
   HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, 0xFFFF); 
-  
+
   return ch;
 }
-
 /* USER CODE END 4 */
 
 /**

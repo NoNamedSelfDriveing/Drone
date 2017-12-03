@@ -9,21 +9,42 @@ MTI mti;
 
 uint8_t mti_rx_flag;
 uint8_t mti_checksum_flag;
-uint8_t mti_rx_buff[1024];
-uint8_t mti_temp_buff[1024];
-uint8_t mti_packet_buff[1024];
+uint8_t mti_dma_rx_buff[MTI_DMA_RX_SIZE];
+uint8_t mti_packet_buff[MTI_PACKET_SIZE];
 int rx_size = 0;
+
+/* mti 초기화 함수 */
+void init_mti()
+{
+  mti_state.new_packet_flag = 1;
+  mti_state.packet_rx_flag = 0;
+  mti_state.checksum_flag = 0;
+  mti_state.decode_finish_flag = 0;
+  mti_state.count = 0;
+}
+
+/* 모든 mti 과정 실행하는 함수 */
+void read_mti()
+{
+  receive_mti_packet();
+  if(mti_state.packet_rx_flag)
+  {
+    check_mti_packet();
+    if(mti_state.checksum_flag)
+    {
+      decode_mti_packet();
+    }
+  }
+}
 
 /* mti로부터 DMA로 패킷 받아오는 함수 */
 void receive_mti_packet()
 {
-    static int prev_ndt = MTI_DMA_RX_SIZE, curr_ndt = 0;
-    static int prev_idx = 0, curr_idx = 0;
-    static int start_idx = 0, end_idx = MTI_DMA_RX_SIZE;
-    static int prev_start_idx = 0, prev_end_idx = MTI_DMA_RX_SIZE;
-    static int initial_rx_start_flag = 1;
-    int i, next_i;
-    uint8_t received_data_size = 0;
+    static int prev_ndt = MTI_DMA_RX_SIZE, curr_ndt = 0;                                //이전 ndt, 현재 ndt
+    static int new_data_start_idx = 0, next_data_start_idx = 0;                         //현재 새롭게 들어온 데이터의 인덱스, 다음 루틴에 들어올 데이터의 인덱스  
+    static int packet_start_idx = 0, packet_end_idx = MTI_DMA_RX_SIZE;        //온전한 패킷의 시작 인덱스, 끝 인덱스
+    int check_idx, next_check_idx;                                                            // 버퍼의 내용을 검사할 인덱스와 그 옆의 인덱스                                                                                         
+    uint8_t received_data_size = 0;                                                             //수신한 데이터 수
     
     /* 현재 ndt 구하기 */
     curr_ndt = __HAL_DMA_GET_COUNTER(&hdma_usart3_rx);
@@ -44,87 +65,54 @@ void receive_mti_packet()
 
     /* DMA로 수신되는 버퍼의 현재 인덱스(마지막으로 들어온 인덱스 + 1) 구하기 */
     rx_size += received_data_size;
-    curr_idx = (prev_idx + received_data_size) % MTI_DMA_RX_SIZE;
+    next_data_start_idx = (new_data_start_idx + received_data_size) % MTI_DMA_RX_SIZE;
     
     /* 현재 들어온 데이터의 시작 인덱스부터 마지막 인덱스까지 검사 */
-    i = prev_idx - 1;
-    next_i = i + 1;
-    if(i == -1) 
+    check_idx = new_data_start_idx - 1;
+    next_check_idx = check_idx + 1;
+    if(check_idx == -1) 
     {
-      i = MTI_DMA_RX_SIZE - 1;
-      next_i = 0;
+      check_idx = MTI_DMA_RX_SIZE - 1;
+      next_check_idx = 0;
     }
-    
-    /* 전원 투입 후 1초일 때 99가 뜨는 문제 해결용 처리 코드 */
-    /*
-    if(initial_rx_start_flag)
+    /* 현재 들어온 데이터의 마지막 인덱스까지 검사를 마치면 break */
+    while(!(next_check_idx == next_data_start_idx))
     {
-      initial_rx_start_flag = 0;
-      i = 0;
-      next_i = i + 1;
-    }
-    */
-    while(1)
-    {
-      /* 체크섬 바이트가 들어왔다면*/
-      if(i == end_idx)
-      { 
-        prev_start_idx = start_idx;
-        prev_end_idx = end_idx;
-
-        /* 패킷의 시작 , 끝 인덱스의 차이에 따른 처리
-            온전한 한 패킷만을 담아놓는 버퍼로 복사 */
-        if(prev_start_idx < prev_end_idx)
-        {
-          memcpy(mti_packet_buff, (mti_rx_buff + prev_start_idx), (prev_end_idx - prev_start_idx) + 1);
-        }
-        
-        else if(prev_start_idx > prev_end_idx)
-        {
-          memcpy(mti_packet_buff, (mti_rx_buff + prev_start_idx), (MTI_DMA_RX_SIZE - prev_start_idx));
-          memcpy((mti_packet_buff + (MTI_DMA_RX_SIZE - prev_start_idx)), mti_rx_buff, prev_end_idx + 1);
-        }
-        mti_state.packet_rx_flag = 1;
-      }
-         
-      if((mti_rx_buff[i] == 0xfa) && (mti_rx_buff[next_i] == 0xff))
+      /* 스타트 바이트 검사 */
+      if((mti_state.new_packet_flag) && ((mti_dma_rx_buff[check_idx] == 0xfa) && (mti_dma_rx_buff[next_check_idx] == 0xff)))    //위험성 존재 코드
+      //if((mti_dma_rx_buff[check_idx] == 0xfa) && (mti_dma_rx_buff[next_check_idx] == 0xff))
       {
-        prev_start_idx = start_idx;
-        prev_end_idx = end_idx;
-        start_idx = i;
-        end_idx = (start_idx + (MTI_PACKET_SIZE - 1)) % MTI_DMA_RX_SIZE;
+        mti_state.new_packet_flag = 0;
+        packet_start_idx = check_idx;
+        packet_end_idx = (packet_start_idx + (MTI_PACKET_SIZE - 1)) % MTI_DMA_RX_SIZE;
       }
       
       /* 링버퍼로 인한 인덱스 변화 처리 */
-      i = (i+1) % MTI_DMA_RX_SIZE;
-      next_i = (i+1) % MTI_DMA_RX_SIZE;
+      check_idx = (check_idx+1) % MTI_DMA_RX_SIZE;
+      next_check_idx = (check_idx+1) % MTI_DMA_RX_SIZE;
       
-      /* 현재 들어온 데이터의 마지막 인덱스까지 검사를 마치면 break */
-      if(next_i == curr_idx)
-      {
-        /* 현재 들어온 데이터의 마지막 인덱스가 CheckSum일 때에 대한 처리 */
-        if(i == prev_end_idx)
-        {
-          if(prev_start_idx < prev_end_idx)
-          {
-            memcpy(mti_packet_buff, (mti_rx_buff + prev_start_idx), (prev_end_idx - prev_start_idx) + 1);
-          }
-          
-          else if(prev_start_idx > prev_end_idx)
-          {     
-            memcpy(mti_packet_buff, (mti_rx_buff + prev_start_idx), (MTI_DMA_RX_SIZE - prev_start_idx));
-            memcpy((mti_packet_buff + (MTI_DMA_RX_SIZE - prev_start_idx)), mti_rx_buff, (prev_end_idx + 1));
-          }
-          mti_state.packet_rx_flag = 1;
-          //mti_state.count++;
+      /* 체크섬 바이트가 들어왔다면*/
+      if(check_idx == packet_end_idx)
+      { 
+        /* 패킷의 시작 , 끝 인덱스의 차이에 따른 처리
+            온전한 한 패킷만을 담아놓는 버퍼로 복사 */
+        if(packet_start_idx < packet_end_idx)
+        {               
+          memcpy(mti_packet_buff, (mti_dma_rx_buff + packet_start_idx), ((packet_end_idx - packet_start_idx) + 1));
         }
-        break;
+        else if(packet_start_idx > packet_end_idx)
+        {
+          memcpy(mti_packet_buff, (mti_dma_rx_buff + packet_start_idx), (MTI_DMA_RX_SIZE - packet_start_idx));
+          memcpy((mti_packet_buff + (MTI_DMA_RX_SIZE - packet_start_idx)), mti_dma_rx_buff, (packet_end_idx + 1));
+        }
+        mti_state.new_packet_flag = 1;
+        mti_state.packet_rx_flag = 1;
       }
     }
     
     /* 현재 값을 이전 값으로 세팅 */
     prev_ndt = curr_ndt;
-    prev_idx = curr_idx;
+    new_data_start_idx = next_data_start_idx;
 }
 
 /* mti 패킷 무결성 체크 함수 */
@@ -139,17 +127,13 @@ void check_mti_packet()
   for(i = 1; i < MTI_PACKET_SIZE; i++)
   {
     result += mti_packet_buff[i];
-    //printf("%x ", mti_packet_buff[i]);
   }
-  //printf("%x", mti_packet_buff[0]);
- // printf("\r\n\r\n");
   checksum = result & 0x00ff;
   
   /* 패킷의 무결성이 결정되면 flag SET */
   if(checksum == 0x0000)
   {
     mti_state.checksum_flag = 1;
-    //printf("success!\r\n");
   }
 }
 
@@ -244,9 +228,9 @@ void decode_mti_packet()
   mti_data.buff[74] = mti_packet_buff[95];
   mti_data.buff[75] = mti_packet_buff[94];
   
-  mti.euler[0] = mti_data.value[0];
+  mti.euler[0] = -mti_data.value[0];
   mti.euler[1] = mti_data.value[1];
-  mti.euler[2] = mti_data.value[2];
+  mti.euler[2] = -mti_data.value[2];
   
   mti.acc[0] = mti_data.value[3];
   mti.acc[1] = mti_data.value[4];
@@ -256,9 +240,9 @@ void decode_mti_packet()
   mti.delta_v[1] = mti_data.value[7];
   mti.delta_v[2] = mti_data.value[8];
    
-  mti.pqr[0] = mti_data.value[9];
-  mti.pqr[1] = mti_data.value[10];
-  mti.pqr[2] = mti_data.value[11];
+  mti.pqr[0] = -mti_data.value[9]*180/PI;
+  mti.pqr[1] = mti_data.value[10]*180/PI;
+  mti.pqr[2] = -mti_data.value[11]*180/PI;
   
   mti.delta_q[0] = mti_data.value[12];
   mti.delta_q[1] = mti_data.value[13];
@@ -269,11 +253,13 @@ void decode_mti_packet()
   mti.mag[1] = mti_data.value[17];
   mti.mag[2] = mti_data.value[18];
   
-  //printf("%f\r\n%f\r\n%f\r\n", mti.euler[0], mti.euler[1], mti.euler[2]);
-  //printf("%f\r\n%f\r\n%f\r\n", mti.acc[0], mti.acc[1], mti.acc[2]);
-  //printf("%f\r\n%f\r\n%f\r\n", mti.delta_v[0], mti.delta_v[1], mti.delta_v[2]);
-  //printf("%f\r\n%f\r\n%f\r\n", mti.pqr[0], mti.pqr[1], mti.pqr[2]);
-  //printf("%f\r\n%f\r\n%f\r\n%f\r\n", mti.delta_q[0], mti.delta_q[1], mti.delta_q[2], mti.delta_q[3]);
-  //printf("%f\r\n%f\r\n%f\r\n", mti.mag[0], mti.mag[1], mti.mag[2]);
+  mti_state.decode_finish_flag = 1;
+  mti_state.count++;
+  //printf("%4f %4f %4f\r\n", mti.euler[0], mti.euler[1], mti.euler[2]);
+  //printf("%4f %4f %4f\r\n", mti.acc[0], mti.acc[1], mti.acc[2]);
+  //printf("%4f %4f %4f\r\n", mti.delta_v[0], mti.delta_v[1], mti.delta_v[2]);
+  //printf("%4f %4f %4f\r\n", mti.pqr[0], mti.pqr[1], mti.pqr[2]);
+  //printf("%4f %4f %4f %4f\r\n", mti.delta_q[0], mti.delta_q[1], mti.delta_q[2], mti.delta_q[3]);
+  //printf("%4f %4f %4f\r\n", mti.mag[0], mti.mag[1], mti.mag[2]);
   //printf("\r\n");
 }
