@@ -11,22 +11,46 @@
 #define ADDRESS_YAW_I    0x0800C01C
 #define ADDRESS_YAW_D    0x0800C020
 
+#define PITCH_P     0
+#define PITCH_I     1
+#define PITCH_D     2
+#define ROLL_P      3
+#define ROLL_I      4
+#define ROLL_D      5
+#define YAW_P       6
+#define YAW_I       7
+#define YAW_D       8
+
 typedef union value{
   uint32_t iValue;
   float fValue;
 }value;
 
+void init_flash(void);
+
+uint8_t confirm_flash(void);
+
 void flash_startWriting(void);
 void flash_startReading(void);
 
-uint8_t writeGain_PitchP(float);
-uint8_t writeGain_PitchI(float);
-uint8_t writeGain_PitchD(float);
-uint8_t writeGain_RollP(float);
-uint8_t writeGain_RollI(float);
-uint8_t writeGain_RollD(float);
-uint8_t writeGain_YawP(float);
-uint8_t writeGain_YawI(float);
-uint8_t writeGain_YawD(float);
+void setGain_PitchP(float);
+void setGain_PitchI(float);
+void setGain_PitchD(float);
+void setGain_RollP(float);
+void setGain_RollI(float);
+void setGain_RollD(float);
+void setGain_YawP(float);
+void setGain_YawI(float);
+void setGain_YawD(float);
+
+float getGain_PitchP(void);
+float getGain_PitchI(void);
+float getGain_PitchD(void);
+float getGain_RollP(void);
+float getGain_RollI(void);
+float getGain_RollD(void);
+float getGain_YawP(void);
+float getGain_YawI(void);
+float getGain_YawD(void);
 
 void readGain_All(void);
