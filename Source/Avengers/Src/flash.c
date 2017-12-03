@@ -6,8 +6,6 @@ uint32_t addresses[9] = {ADDRESS_PITCH_P, ADDRESS_PITCH_I, ADDRESS_PITCH_D, ADDR
 
 void init_flash(void)
 {
-  int i;
-  
   gains[PITCH_P] = getGain_PitchP();
   gains[PITCH_I] = getGain_PitchI();
   gains[PITCH_D] = getGain_PitchD();
