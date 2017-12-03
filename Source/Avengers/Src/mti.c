@@ -64,7 +64,6 @@ void receive_mti_packet()
     }
 
     /* DMA로 수신되는 버퍼의 현재 인덱스(마지막으로 들어온 인덱스 + 1) 구하기 */
-    rx_size += received_data_size;
     next_data_start_idx = (new_data_start_idx + received_data_size) % MTI_DMA_RX_SIZE;
     
     /* 현재 들어온 데이터의 시작 인덱스부터 마지막 인덱스까지 검사 */
@@ -78,9 +77,9 @@ void receive_mti_packet()
     /* 현재 들어온 데이터의 마지막 인덱스까지 검사를 마치면 break */
     while(!(next_check_idx == next_data_start_idx))
     {
+      //if((mti_state.new_packet_flag) && ((mti_dma_rx_buff[check_idx] == 0xfa) && (mti_dma_rx_buff[next_check_idx] == 0xff))) 
       /* 스타트 바이트 검사 */
-      if((mti_state.new_packet_flag) && ((mti_dma_rx_buff[check_idx] == 0xfa) && (mti_dma_rx_buff[next_check_idx] == 0xff)))    //위험성 존재 코드
-      //if((mti_dma_rx_buff[check_idx] == 0xfa) && (mti_dma_rx_buff[next_check_idx] == 0xff))
+      if((mti_dma_rx_buff[check_idx] == 0xfa) && (mti_dma_rx_buff[next_check_idx] == 0xff))             //위험성 존재 코드
       {
         mti_state.new_packet_flag = 0;
         packet_start_idx = check_idx;
@@ -105,7 +104,6 @@ void receive_mti_packet()
           memcpy(mti_packet_buff, (mti_dma_rx_buff + packet_start_idx), (MTI_DMA_RX_SIZE - packet_start_idx));
           memcpy((mti_packet_buff + (MTI_DMA_RX_SIZE - packet_start_idx)), mti_dma_rx_buff, (packet_end_idx + 1));
         }
-        mti_state.new_packet_flag = 1;
         mti_state.packet_rx_flag = 1;
       }
     }
@@ -128,6 +126,7 @@ void check_mti_packet()
   {
     result += mti_packet_buff[i];
   }
+  
   checksum = result & 0x00ff;
   
   /* 패킷의 무결성이 결정되면 flag SET */
@@ -255,6 +254,7 @@ void decode_mti_packet()
   
   mti_state.decode_finish_flag = 1;
   mti_state.count++;
+  
   //printf("%4f %4f %4f\r\n", mti.euler[0], mti.euler[1], mti.euler[2]);
   //printf("%4f %4f %4f\r\n", mti.acc[0], mti.acc[1], mti.acc[2]);
   //printf("%4f %4f %4f\r\n", mti.delta_v[0], mti.delta_v[1], mti.delta_v[2]);

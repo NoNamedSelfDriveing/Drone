@@ -111,15 +111,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
   /* 모든 device 초기화 */
   initialize();
-  printf("%d", sbus_packet_buff[0]);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   
-  
   while (1)
   {
+    
     //read_gy63_adc(CMD_ADC_4096);
     //calculate_gy63_altitude();
     //HAL_Delay(100);
@@ -218,6 +217,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* 1000Hz */
   else if(htim->Instance == TIM6)
   {
+    
       read_mti();
       read_sbus();
       read_gps();
@@ -228,37 +228,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         controller();
         mixer();
       }
-      
-//    read_mti();
-//    read_sbus();
-//    
-//    controll_cmd();
-//    controller();
-//    mixer();
-//    
-//    write_pwm();
-    
-//    receive_mti_packet();
-//    if(mti_state.packet_rx_flag)
-//    {
-//      check_mti_packet();
-//      if(mti_state.checksum_flag)
-//      {
-//        decode_mti_packet();
-//        mti_state.count++;
-//      }
-//    }
-    
-//    update_buffer();
-//    if(make_next_decodeable_buffer()){
-////      decode_sbus_data();
-//    }
-//    
-//    if(++idx >=10){
-//      //printf("%.4f %.4d\r\n",mti.euler[0], sbus.data_buff[2]);
-//      printf("HELLO WORLD!\n\r");
-//      idx = 0;
-//    }
     
   }
 }
