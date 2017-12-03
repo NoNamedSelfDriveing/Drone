@@ -50,8 +50,7 @@
 #include "gps.h"
 #include "gy63.h"
 #include "sbus.h"
-#include "control.h"
-#include "mixer.h"
+#include "xbee.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -59,6 +58,7 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
     
+uint8_t xbee_rx_buff[2];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -107,11 +107,11 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   MX_TIM1_Init();
+  MX_UART4_Init();
 
   /* USER CODE BEGIN 2 */
   /* 모든 device 초기화 */
   initialize();
-  printf("%d", sbus_packet_buff[0]);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -198,37 +198,31 @@ void initialize()
   init_sbus();
   init_mti();
   init_gps();
-  init_gain();
   //init_gy63();
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  static uint8_t idx;
   /* 1Hz */
   if(htim->Instance == TIM7)
   {
-    printf("%d %d %d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count, gps_state.posllh_loop_counter, gps_state.velned_loop_counter);
+   // printf("%d %d %d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count, gps_state.posllh_loop_counter, gps_state.velned_loop_counter);
     //number = 0;
     mti_state.count = 0;
     sbus.count = 0;
     gps_state.posllh_loop_counter = 0;
     gps_state.velned_loop_counter = 0;
+    //printf("%4d \r\n", __HAL_DMA_GET_COUNTER(&hdma_uart4_tx));
   }
   /* 1000Hz */
   else if(htim->Instance == TIM6)
   {
+      //printf("%4d, %4X, %4X \r\n", __HAL_DMA_GET_COUNTER(&hdma_uart4_rx), xbee_rx_buff[0], xbee_rx_buff[1]);
+      //printf("%4d", __HAL_DMA_GET_COUNTER(&hdma_uart4_rx));
       read_mti();
       read_sbus();
       read_gps();
-      control_cmd();
-      if(mti_state.decode_finish_flag)
-      {
-        mti_state.decode_finish_flag = 0;
-        controller();
-        mixer();
-      }
-      
+      read_xbee();
 //    read_mti();
 //    read_sbus();
 //    

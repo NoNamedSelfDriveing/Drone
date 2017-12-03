@@ -12,7 +12,6 @@ typedef struct _mti_state
   uint8_t     new_packet_flag;
   uint8_t     packet_rx_flag;
   uint8_t     checksum_flag;
-  uint8_t     decode_finish_flag;
   uint16_t    count;
 }MTIState;
 

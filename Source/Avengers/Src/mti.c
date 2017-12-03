@@ -19,7 +19,6 @@ void init_mti()
   mti_state.new_packet_flag = 1;
   mti_state.packet_rx_flag = 0;
   mti_state.checksum_flag = 0;
-  mti_state.decode_finish_flag = 0;
   mti_state.count = 0;
 }
 
@@ -240,9 +239,9 @@ void decode_mti_packet()
   mti.delta_v[1] = mti_data.value[7];
   mti.delta_v[2] = mti_data.value[8];
    
-  mti.pqr[0] = -mti_data.value[9]*180/PI;
-  mti.pqr[1] = mti_data.value[10]*180/PI;
-  mti.pqr[2] = -mti_data.value[11]*180/PI;
+  mti.pqr[0] = -mti_data.value[9];
+  mti.pqr[1] = mti_data.value[10];
+  mti.pqr[2] = -mti_data.value[11];
   
   mti.delta_q[0] = mti_data.value[12];
   mti.delta_q[1] = mti_data.value[13];
@@ -253,7 +252,6 @@ void decode_mti_packet()
   mti.mag[1] = mti_data.value[17];
   mti.mag[2] = mti_data.value[18];
   
-  mti_state.decode_finish_flag = 1;
   mti_state.count++;
   //printf("%4f %4f %4f\r\n", mti.euler[0], mti.euler[1], mti.euler[2]);
   //printf("%4f %4f %4f\r\n", mti.acc[0], mti.acc[1], mti.acc[2]);

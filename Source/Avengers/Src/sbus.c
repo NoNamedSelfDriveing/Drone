@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "stm32f4xx_hal.h"
-#include "mti.h"
 #include "sbus.h"
 #include "main.h"
 #include "tim.h"
@@ -18,7 +17,7 @@
 SBUS sbus;
 uint8_t sbus_dma_receive_buff[SBUS_DMA_RECEIVE_SIZE];
 uint8_t sbus_packet_buff[SBUS_PACKET_SIZE];
-uint16_t sbus_data_buff[18];
+uint16_t data_buff[18];
 uint16_t sbus_pwm_pulse[6];
 
 extern DMA_HandleTypeDef hdma_usart1_rx;
@@ -116,13 +115,13 @@ void decode_sbus_data()
 {
   sbus.packet_ok_flag = 0;
   
-  sbus_data_buff[0] = (uint16_t)sbus_packet_buff[1] + (uint16_t)((sbus_packet_buff[2]&0x07)<<8);
-  sbus_data_buff[1] = (uint16_t)((sbus_packet_buff[2]&0xf8)>>3) + (uint16_t)((sbus_packet_buff[3]&0x3f)<<5);
-  sbus_data_buff[2] = (uint16_t)((sbus_packet_buff[3]&0xc0)>>6) + (uint16_t)(sbus_packet_buff[4]<<2) + (uint16_t)((sbus_packet_buff[5]&0x01)<<10);
-  sbus_data_buff[3] = (uint16_t)((sbus_packet_buff[5]&0xfe)>>1) + (uint16_t)((sbus_packet_buff[6]&0x0f)<<7);
-  sbus_data_buff[4] = (uint16_t)((sbus_packet_buff[6]&0xf0)>>4) + (uint16_t)((sbus_packet_buff[7]&0x7f)<<4);
-  sbus_data_buff[5] = (uint16_t)((sbus_packet_buff[7]&0x80)>>7) + (uint16_t)(sbus_packet_buff[8]<<1) + (uint16_t)((sbus_packet_buff[9]&0x03)<<9);
-  sbus_data_buff[6] = (uint16_t)((sbus_packet_buff[9]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[10]&0x1f)<<6);
+  data_buff[0] = (uint16_t)sbus_packet_buff[1] + (uint16_t)((sbus_packet_buff[2]&0x07)<<8);
+  data_buff[1] = (uint16_t)((sbus_packet_buff[2]&0xf8)>>3) + (uint16_t)((sbus_packet_buff[3]&0x3f)<<5);
+  data_buff[2] = (uint16_t)((sbus_packet_buff[3]&0xc0)>>6) + (uint16_t)(sbus_packet_buff[4]<<2) + (uint16_t)((sbus_packet_buff[5]&0x01)<<10);
+  data_buff[3] = (uint16_t)((sbus_packet_buff[5]&0xfe)>>1) + (uint16_t)((sbus_packet_buff[6]&0x0f)<<7);
+  data_buff[4] = (uint16_t)((sbus_packet_buff[6]&0xf0)>>4) + (uint16_t)((sbus_packet_buff[7]&0x7f)<<4);
+  data_buff[5] = (uint16_t)((sbus_packet_buff[7]&0x80)>>7) + (uint16_t)(sbus_packet_buff[8]<<1) + (uint16_t)((sbus_packet_buff[9]&0x03)<<9);
+  data_buff[6] = (uint16_t)((sbus_packet_buff[9]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[10]&0x1f)<<6);
   
   //printf("%d %d %d %d %d %d %d\r\n", data_buff[0], data_buff[1], data_buff[2], data_buff[3], data_buff[4], data_buff[5], data_buff[6]);
 }
@@ -136,9 +135,7 @@ void make_sbus_pwm_value()
   int i;
  
   for(i = 0; i < 4; i++){
-      //sbus_pwm_pulse[i] = (uint16_t)( / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
-    //sbus_pwm_pulse[i] = (uint16_t)(data_buff[i] / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
-    
+    sbus_pwm_pulse[i] = (uint16_t)(data_buff[i] / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
   }
 }
 

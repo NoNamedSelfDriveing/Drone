@@ -1,6 +1,6 @@
 Configuration	Avengers
 STM32CubeMX 	4.22.1
-Date	12/01/2017
+Date	12/03/2017
 MCU	STM32F407VETx
 
 
@@ -18,6 +18,8 @@ TIM1	PWM Generation CH1	TIM1_CH1	PE9
 TIM1	PWM Generation CH2	TIM1_CH2	PE11
 TIM1	PWM Generation CH3	TIM1_CH3	PE13
 TIM1	PWM Generation CH4	TIM1_CH4	PE14
+UART4	Asynchronous	UART4_RX	PA1
+UART4	Asynchronous	UART4_TX	PA0-WKUP
 USART1	Asynchronous	USART1_RX	PA10
 USART1	Asynchronous	USART1_TX	PA9
 USART2	Asynchronous	USART2_RX	PA3
@@ -32,6 +34,8 @@ USART6	Asynchronous	USART6_TX	PC6
 Pin Nb	PINs	FUNCTIONs	LABELs
 12	PH0-OSC_IN	RCC_OSC_IN	
 13	PH1-OSC_OUT	RCC_OSC_OUT	
+23	PA0-WKUP	UART4_TX	
+24	PA1	UART4_RX	
 25	PA2	USART2_TX	
 26	PA3	USART2_RX	
 40	PE9	TIM1_CH1	
@@ -55,7 +59,7 @@ SOFTWARE PROJECT
 
 Project Settings : 
 Project Name : Avengers
-Project Folder : D:\바탕화면\NoNamed\드론 프로젝트\Project\Drone\Source\Avengers
+Project Folder : D:\sang-min\Club\Drone\source\Avengers
 Toolchain / IDE : EWARM
 Firmware Package Name and Version : STM32Cube FW_F4 V1.16.0
 
