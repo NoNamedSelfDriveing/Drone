@@ -49,7 +49,6 @@ void                    read_xbee();
 void                    check_xbee_packet();
 void                    decode_xbee_packet();
 void                    init_xbee();
-
-int                    change_ascii_to_int(uint8_t);
+void                    change_gain_value();
 
 #endif

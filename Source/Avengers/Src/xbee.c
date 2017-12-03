@@ -1,4 +1,5 @@
 #include "xbee.h"
+#include "flash.h"
 
 XbeeState       xbee_state;
 XbeeData        xbee_data;
@@ -17,6 +18,77 @@ void init_xbee()
   xbee_data.value = 0.0;
 }
 
+void change_gain_value()
+{
+
+  switch(xbee_data.data_type)
+  {
+  
+  case 0x41: // A type - Roll P gain value change
+    setGain_RollP(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_RollP());
+    
+    break;
+    
+  case 0x42: // B type - Roll I gain value change
+    setGain_RollI(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_RollI());
+    
+    break;
+    
+  case 0x43: // C type - Roll D gain value change
+    setGain_RollD(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_RollD());
+    
+    break;
+    
+  case 0x44: // D type - Pitch P gain value change
+    setGain_PitchP(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_PitchP());
+    
+    break;
+    
+  case 0x45: // E type - Pitch I gain value change
+    setGain_PitchI(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_PitchI());
+    
+    break;
+    
+  case 0x46: // F type - Pitch D gain value change
+    setGain_PitchD(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_PitchD());
+    
+    break;
+    
+  case 0x47: // G type - Yaw P gain value change
+    setGain_YawP(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_YawP());
+    
+    break;
+    
+  case 0x48: // H type - Yaw I gain value change
+    setGain_YawI(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_YawI());
+    
+    break;
+    
+  case 0x49: // I type - Yaw D gain value change
+    setGain_YawD(xbee_data.value);
+    //printf("Xbee type : %4c, Xbee value : %4f, flash value : %4f \r\n", xbee_data.data_type, xbee_data.value, getGain_YawD());
+    
+    break;
+    
+  default:
+    printf("Xbee Type value Error!!! / %4X %4f \r\n", xbee_data.data_type, xbee_data.value);
+    return ;
+    
+    break;
+  }
+  
+  printf("Xbee type : %4X %4c, Xbee value : %4f \r\n", xbee_data.data_type, xbee_data.data_type, xbee_data.value);
+  confirm_flash();
+  readGain_All();
+}
 
 void decode_xbee_packet()
 {
@@ -71,6 +143,9 @@ void decode_xbee_packet()
    
   }
   
+  }
+  
+
   printf("%4d, %4f \r\n", temp, xbee_data.value);
 }
 
@@ -91,7 +166,7 @@ void read_xbee()
     printf("\r\n");
     
     decode_xbee_packet();
-    
+    change_gain_value();
   }
   
 }

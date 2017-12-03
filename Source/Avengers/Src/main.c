@@ -51,6 +51,7 @@
 #include "gy63.h"
 #include "sbus.h"
 #include "xbee.h"
+#include "flash.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -198,6 +199,7 @@ void initialize()
   init_sbus();
   init_mti();
   init_gps();
+  init_flash)();
   //init_gy63();
 }
 
