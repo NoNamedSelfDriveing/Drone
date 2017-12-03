@@ -7,7 +7,6 @@ uint32_t addresses[9] = {ADDRESS_PITCH_P, ADDRESS_PITCH_I, ADDRESS_PITCH_D, ADDR
 
 void init_flash(void)
 {
-  int i;
   
   flash_startReading();
   
