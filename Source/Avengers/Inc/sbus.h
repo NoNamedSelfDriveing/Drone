@@ -47,7 +47,7 @@ void generate_sbus_pwm(TIM_HandleTypeDef*);
 extern SBUS sbus;
 extern uint8_t sbus_dma_receive_buff[SBUS_DMA_RECEIVE_SIZE];
 extern uint8_t sbus_packet_buff[SBUS_PACKET_SIZE];
-extern uint16_t sbus_data_buff[18];
+
 // Buffer of PWM value should be controlled
 extern uint16_t sbus_pwm_pulse[6];
 #endif
