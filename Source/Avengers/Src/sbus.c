@@ -1,7 +1,7 @@
 /**********************************************************************
  *     sbus.c                                                         *
  *     written by Soomin Lee (MagmaTart)                              *
- *     Last modify date : 2017.11.30                                  *
+ *     Last modify date : 2017.12.04                                  *
  *     Description : Implements of Functions to use SBUS protocol.    *
  **********************************************************************/
 
@@ -128,14 +128,14 @@ void decode_sbus_data()
 
 void make_sbus_pwm_value()
 {
-  const float min_duty = 4598.0;
-  const float max_duty = 8126.0;
+  const float min_pulse = 4619.0;
+  const float max_pulse = 8147.0;
   const float max_pwm = 1696.0;
   const float min_pwm = 352.0;
   int i;
  
   for(i = 0; i < 4; i++){
-    sbus_pwm_pulse[i] = (uint16_t)(data_buff[i] / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
+    sbus_pwm_pulse[i] = (uint16_t)(data_buff[i] / ((max_pwm - min_pwm) / (max_pulse - min_pulse)) + 3696);
   }
 }
 
