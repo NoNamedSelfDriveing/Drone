@@ -1,13 +1,14 @@
 /**********************************************************************
  *     sbus.c                                                         *
  *     written by Soomin Lee (MagmaTart)                              *
- *     Last modify date : 2017.12.04                                  *
+ *     Last modify date : 2017.11.30                                  *
  *     Description : Implements of Functions to use SBUS protocol.    *
  **********************************************************************/
 
 #include <string.h>
 #include <stdio.h>
 #include "stm32f4xx_hal.h"
+#include "mti.h"
 #include "sbus.h"
 #include "main.h"
 #include "tim.h"
@@ -17,7 +18,7 @@
 SBUS sbus;
 uint8_t sbus_dma_receive_buff[SBUS_DMA_RECEIVE_SIZE];
 uint8_t sbus_packet_buff[SBUS_PACKET_SIZE];
-uint16_t data_buff[18];
+uint16_t sbus_data_buff[18];
 uint16_t sbus_pwm_pulse[6];
 
 extern DMA_HandleTypeDef hdma_usart1_rx;
@@ -113,29 +114,48 @@ void make_next_decodeable_buffer()
 
 void decode_sbus_data()
 {
+  int i;
   sbus.packet_ok_flag = 0;
   
-  data_buff[0] = (uint16_t)sbus_packet_buff[1] + (uint16_t)((sbus_packet_buff[2]&0x07)<<8);
-  data_buff[1] = (uint16_t)((sbus_packet_buff[2]&0xf8)>>3) + (uint16_t)((sbus_packet_buff[3]&0x3f)<<5);
-  data_buff[2] = (uint16_t)((sbus_packet_buff[3]&0xc0)>>6) + (uint16_t)(sbus_packet_buff[4]<<2) + (uint16_t)((sbus_packet_buff[5]&0x01)<<10);
-  data_buff[3] = (uint16_t)((sbus_packet_buff[5]&0xfe)>>1) + (uint16_t)((sbus_packet_buff[6]&0x0f)<<7);
-  data_buff[4] = (uint16_t)((sbus_packet_buff[6]&0xf0)>>4) + (uint16_t)((sbus_packet_buff[7]&0x7f)<<4);
-  data_buff[5] = (uint16_t)((sbus_packet_buff[7]&0x80)>>7) + (uint16_t)(sbus_packet_buff[8]<<1) + (uint16_t)((sbus_packet_buff[9]&0x03)<<9);
-  data_buff[6] = (uint16_t)((sbus_packet_buff[9]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[10]&0x1f)<<6);
+  sbus_data_buff[0] = (uint16_t)sbus_packet_buff[1] + (uint16_t)((sbus_packet_buff[2]&0x07)<<8);
+  sbus_data_buff[1] = (uint16_t)((sbus_packet_buff[2]&0xf8)>>3) + (uint16_t)((sbus_packet_buff[3]&0x3f)<<5);
+  sbus_data_buff[2] = (uint16_t)((sbus_packet_buff[3]&0xc0)>>6) + (uint16_t)(sbus_packet_buff[4]<<2) + (uint16_t)((sbus_packet_buff[5]&0x01)<<10);
+  sbus_data_buff[3] = (uint16_t)((sbus_packet_buff[5]&0xfe)>>1) + (uint16_t)((sbus_packet_buff[6]&0x0f)<<7);
+  sbus_data_buff[4] = (uint16_t)((sbus_packet_buff[6]&0xf0)>>4) + (uint16_t)((sbus_packet_buff[7]&0x7f)<<4);
+  sbus_data_buff[5] = (uint16_t)((sbus_packet_buff[7]&0x80)>>7) + (uint16_t)(sbus_packet_buff[8]<<1) + (uint16_t)((sbus_packet_buff[9]&0x03)<<9);
+  sbus_data_buff[6] = (uint16_t)((sbus_packet_buff[9]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[10]&0x1f)<<6);
+  sbus_data_buff[7] = (uint16_t)((sbus_packet_buff[10]&0xe0)>>5) + (uint16_t)(sbus_packet_buff[11]<<3);
+  sbus_data_buff[8] = (uint16_t)sbus_packet_buff[12] + (uint16_t)((sbus_packet_buff[13]&0x07)<<8);
+  sbus_data_buff[9] = (uint16_t)((sbus_packet_buff[13]&0xf8)>>3) + (uint16_t)((sbus_packet_buff[14]&0x3f)<<5);
+  sbus_data_buff[10] = (uint16_t)((sbus_packet_buff[14]&0xc0)>>6) + (uint16_t)(sbus_packet_buff[15]<<2) + (uint16_t)((sbus_packet_buff[16]&0x01)<<10);
+  sbus_data_buff[11] = (uint16_t)((sbus_packet_buff[16]&0xfe)>>1) + (uint16_t)((sbus_packet_buff[17]&0x0f)<<7);
+  sbus_data_buff[12] = (uint16_t)((sbus_packet_buff[17]&0xf0)>>4) + (uint16_t)((sbus_packet_buff[18]&0x7f)<<4);
+  sbus_data_buff[13] = (uint16_t)((sbus_packet_buff[18]&0x80)>>7) + (uint16_t)(sbus_packet_buff[19]<<1) + (uint16_t)((sbus_packet_buff[20]&0x03)<<9);
+  sbus_data_buff[14] = (uint16_t)((sbus_packet_buff[20]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[21]&0x1f)<<6);
+  sbus_data_buff[15] = (uint16_t)((sbus_packet_buff[21]&0xe0)>>5) + (uint16_t)(sbus_packet_buff[22]<<3);
   
+  /*
+  for(i = 0; i < 16; i++)
+  {
+    printf("%d ", sbus_data_buff[i]);
+  }
+  printf("\r\n");
+  */
   //printf("%d %d %d %d %d %d %d\r\n", data_buff[0], data_buff[1], data_buff[2], data_buff[3], data_buff[4], data_buff[5], data_buff[6]);
 }
 
 void make_sbus_pwm_value()
 {
-  const float min_pulse = 4619.0;
-  const float max_pulse = 8147.0;
+  const float min_duty = 4598.0;
+  const float max_duty = 8126.0;
   const float max_pwm = 1696.0;
   const float min_pwm = 352.0;
   int i;
  
   for(i = 0; i < 4; i++){
-    sbus_pwm_pulse[i] = (uint16_t)(data_buff[i] / ((max_pwm - min_pwm) / (max_pulse - min_pulse)) + 3696);
+      //sbus_pwm_pulse[i] = (uint16_t)( / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
+    //sbus_pwm_pulse[i] = (uint16_t)(data_buff[i] / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
+    
   }
 }
 

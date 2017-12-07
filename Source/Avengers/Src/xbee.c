@@ -7,6 +7,7 @@ XbeeUnion       xbee_union;
 
 uint8_t         xbee_dma_receive_buff[XBEE_RX_BUFF_SIZE];
 uint8_t         xbee_packet_buff[XBEE_PACKET_SIZE];
+uint8_t         xbee_check_tx_buff[XBEE_TX_BUFF_SIZE];
 
 void init_xbee()
 {
@@ -79,13 +80,14 @@ void change_gain_value()
     break;
     
   default:
-    printf("Xbee Type value Error!!! / %4X %4f \r\n", xbee_data.data_type, xbee_data.value);
+    
+    //printf("Xbee Type value Error!!! / %4X %4f \r\n", xbee_data.data_type, xbee_data.value);
     return ;
     
     break;
   }
   
-  printf("Xbee type : %4X %4c, Xbee value : %4f \r\n", xbee_data.data_type, xbee_data.data_type, xbee_data.value);
+  //printf("Xbee type : %4X %4c, Xbee value : %4f \r\n", xbee_data.data_type, xbee_data.data_type, xbee_data.value);
   confirm_flash();
   readGain_All();
 }
@@ -146,7 +148,7 @@ void decode_xbee_packet()
 
   
 
-  printf("%4d, %4f \r\n", temp, xbee_data.value);
+  //printf("%4d, %4f \r\n", temp, xbee_data.value);
 }
 
 void read_xbee()
@@ -161,9 +163,9 @@ void read_xbee()
     
     for(i=0; i<XBEE_PACKET_SIZE; i++)
     {
-      printf("%4X ", xbee_packet_buff[i]);
+      //printf("%4X ", xbee_packet_buff[i]);
     }
-    printf("\r\n");
+    //printf("\r\n");
     
     decode_xbee_packet();
     change_gain_value();
