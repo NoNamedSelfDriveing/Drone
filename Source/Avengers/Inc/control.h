@@ -4,6 +4,7 @@
 #include "stm32f4xx_hal.h"
 #include "mti.h"
 #include "sbus.h"
+#include "flash.h"
 
 void init_gain();
 void control_cmd();

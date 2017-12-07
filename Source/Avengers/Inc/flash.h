@@ -1,3 +1,6 @@
+#ifndef FLASH_H
+#define FLASH_H
+
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_flash.h"
 
@@ -23,7 +26,7 @@
 #define YAW_D       8
 
 typedef union value{
-  int iValue;
+  uint32_t iValue;
   float fValue;
 }value;
 
@@ -55,3 +58,6 @@ float getGain_YawI(void);
 float getGain_YawD(void);
 
 void readGain_All(void);
+  
+extern float gains[9];
+#endif

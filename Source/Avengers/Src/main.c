@@ -50,6 +50,8 @@
 #include "gps.h"
 #include "gy63.h"
 #include "sbus.h"
+#include "control.h"
+#include "mixer.h"
 #include "xbee.h"
 #include "flash.h"
 /* USER CODE END Includes */
@@ -59,7 +61,6 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
     
-uint8_t xbee_rx_buff[2];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -111,16 +112,16 @@ int main(void)
   MX_UART4_Init();
 
   /* USER CODE BEGIN 2 */
-  /* ï¿½ï¿½ï¿½ï¿½ device ï¿½Ê±ï¿½È­ */
+  /* ¸ðµç device ÃÊ±âÈ­ */
   initialize();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   
-  
   while (1)
   {
+    
     //read_gy63_adc(CMD_ADC_4096);
     //calculate_gy63_altitude();
     //HAL_Delay(100);
@@ -191,72 +192,49 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* All of things initialize function */
-/* ï¿½ï¿½ï¿½ï¿½ device ï¿½Ê±ï¿½È­ ï¿½Ï´ï¿½ ï¿½Ô¼ï¿½ */
+/* ¸ðµç device ÃÊ±âÈ­ ÇÏ´Â ÇÔ¼ö */
 void initialize()
 {
-  init_tim();
   init_uart_dma();
   init_sbus();
   init_mti();
   init_gps();
   init_flash();
-  readGain_All();
+  init_gain();
+  init_tim();
+  
   //init_gy63();
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+  static uint8_t idx;
   /* 1Hz */
   if(htim->Instance == TIM7)
   {
-   // printf("%d %d %d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count, gps_state.posllh_loop_counter, gps_state.velned_loop_counter);
+    printf("%d %d %d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count, gps_state.posllh_loop_counter, gps_state.velned_loop_counter);
     //number = 0;
     mti_state.count = 0;
     sbus.count = 0;
     gps_state.posllh_loop_counter = 0;
     gps_state.velned_loop_counter = 0;
-    //printf("%4d \r\n", __HAL_DMA_GET_COUNTER(&hdma_uart4_tx));
   }
   /* 1000Hz */
   else if(htim->Instance == TIM6)
   {
-      //printf("%4d, %4X, %4X \r\n", __HAL_DMA_GET_COUNTER(&hdma_uart4_rx), xbee_rx_buff[0], xbee_rx_buff[1]);
-      //printf("%4d", __HAL_DMA_GET_COUNTER(&hdma_uart4_rx));
+    
       read_mti();
       read_sbus();
       read_gps();
       read_xbee();
-//    read_mti();
-//    read_sbus();
-//    
-//    controll_cmd();
-//    controller();
-//    mixer();
-//    
-//    write_pwm();
-    
-//    receive_mti_packet();
-//    if(mti_state.packet_rx_flag)
-//    {
-//      check_mti_packet();
-//      if(mti_state.checksum_flag)
-//      {
-//        decode_mti_packet();
-//        mti_state.count++;
-//      }
-//    }
-    
-//    update_buffer();
-//    if(make_next_decodeable_buffer()){
-////      decode_sbus_data();
-//    }
-//    
-//    if(++idx >=10){
-//      //printf("%.4f %.4d\r\n",mti.euler[0], sbus.data_buff[2]);
-//      printf("HELLO WORLD!\n\r");
-//      idx = 0;
-//    }
-    
+      control_cmd();
+      if(mti_state.decode_finish_flag)
+      {
+        mti_state.decode_finish_flag = 0;
+        controller();
+        mixer();
+      }
+
   }
 }
 

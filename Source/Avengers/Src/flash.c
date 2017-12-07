@@ -7,54 +7,68 @@ uint32_t addresses[9] = {ADDRESS_PITCH_P, ADDRESS_PITCH_I, ADDRESS_PITCH_D, ADDR
 
 void init_flash(void)
 {
+  int i;
   
   flash_startReading();
   
   check = *(__IO uint32_t*)ADDRESS_CHECK;
   if(check != 1)
   {
-	printf("CHECK %d\n\r", check);
+    //printf("CHECK %d\n\r", check);
 	
     flash_startWriting();
 	
-    	gains[PITCH_P] = 6;
-	gains[PITCH_I] = 0;
-	gains[PITCH_D] = 1.5;	
-	gains[ROLL_P] = 6;
-	gains[ROLL_I] = 0;
-	gains[ROLL_D] = 1.5;
-	gains[YAW_P] = 10;
-	gains[YAW_I] = 0;
-	gains[YAW_D] = 0;
+    gains[PITCH_P] = 6;
+    gains[PITCH_I] = 0;
+    gains[PITCH_D] = 1.5;	
+    gains[ROLL_P] = 6;
+    gains[ROLL_I] = 0;
+    gains[ROLL_D] = 1.5;
+    gains[YAW_P] = 10;
+    gains[YAW_I] = 0;
+    gains[YAW_D] = 0;
 
-	setGain_PitchP( gains[PITCH_P] );
-	setGain_PitchI( gains[PITCH_I] );
-	setGain_PitchD( gains[PITCH_D] );
-	setGain_RollP( gains[ROLL_P] );
-	setGain_RollI( gains[ROLL_I] );
-	setGain_RollD( gains[ROLL_D] );
-	setGain_YawP( gains[YAW_P] );
-	setGain_YawI( gains[YAW_I] );
-	setGain_YawD( gains[YAW_D] );
-	
-	confirm_flash();
+    setGain_PitchP( gains[PITCH_P] );
+    setGain_PitchI( gains[PITCH_I] );
+    setGain_PitchD( gains[PITCH_D] );
+    setGain_RollP( gains[ROLL_P] );
+    setGain_RollI( gains[ROLL_I] );
+    setGain_RollD( gains[ROLL_D] );
+    setGain_YawP( gains[YAW_P] );
+    setGain_YawI( gains[YAW_I] );
+    setGain_YawD( gains[YAW_D] );
+    
+    confirm_flash();
   }
   
-  gains[PITCH_P] = getGain_PitchP();
-  gains[PITCH_I] = getGain_PitchI();
-  gains[PITCH_D] = getGain_PitchD();
-  gains[ROLL_P] = getGain_RollP();
-  gains[ROLL_I] = getGain_RollI();
-  gains[ROLL_D] = getGain_RollD();
-  gains[YAW_P] = getGain_YawP();
-  gains[YAW_I] = getGain_YawI();
-  gains[YAW_D] = getGain_YawD();
+  V.iValue = *(__IO uint32_t*)ADDRESS_PITCH_P;
+  gains[PITCH_P] = V.fValue;
+  V.iValue = *(__IO uint32_t*)ADDRESS_PITCH_I;
+  gains[PITCH_I] = V.fValue;
+  V.iValue = *(__IO uint32_t*)ADDRESS_PITCH_D;
+  gains[PITCH_D] = V.fValue;
+  V.iValue = *(__IO uint32_t*)ADDRESS_ROLL_P;
+  gains[ROLL_P] = V.fValue;
+  V.iValue = *(__IO uint32_t*)ADDRESS_ROLL_I;
+  gains[ROLL_I] = V.fValue;
+  V.iValue = *(__IO uint32_t*)ADDRESS_ROLL_D;
+  gains[ROLL_D] = V.fValue;
+  V.iValue = *(__IO uint32_t*)ADDRESS_YAW_P;
+  gains[YAW_P] = V.fValue;
+  V.iValue = *(__IO uint32_t*)ADDRESS_YAW_I;
+  gains[YAW_I] = V.fValue;
+  V.iValue = *(__IO uint32_t*)ADDRESS_YAW_D;
+  gains[YAW_D] = V.fValue;
 }
 
 void flash_startWriting(void)
 {
   HAL_FLASH_Unlock();
-  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
+  __HAL_FLASH_CLEAR_FLAG(
+						   FLASH_FLAG_EOP    | FLASH_FLAG_OPERR  |
+						   FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR |
+						   FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR
+						 );
 }
 
 void flash_startReading(void)
@@ -136,71 +150,54 @@ void setGain_YawD(float d)
 
 float getGain_PitchP(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_PITCH_P;
-  return V.fValue;
+  return gains[PITCH_P];
 }
 
 float getGain_PitchI(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_PITCH_I;
-  return V.fValue;
+  return gains[PITCH_I];
 }
 
 float getGain_PitchD(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_PITCH_D;
-  return V.fValue;
+  return gains[PITCH_D];
 }
 
 float getGain_RollP(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_ROLL_P;
-  return V.fValue;
+  return gains[ROLL_P];
 }
 
 float getGain_RollI(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_ROLL_I;
-  return V.fValue;
+  return gains[ROLL_I];
 }
 
 float getGain_RollD(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_ROLL_D;
-  return V.fValue;
+  return gains[ROLL_D];
 }
 
 float getGain_YawP(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_YAW_P;
-  return V.fValue;
+  return gains[YAW_P];
 }
 
 float getGain_YawI(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_YAW_I;
-  return V.fValue;
+  return gains[YAW_I];
 }
 
 float getGain_YawD(void)
 {
-  flash_startReading();
-  V.iValue = *(__IO uint32_t*)ADDRESS_YAW_D;
-  return V.fValue;
+  return gains[YAW_D];
 }
 
 void readGain_All(void)
 {
   HAL_FLASH_Lock();
   
+/*
   printf("Pitch P : %.4f\n\r", getGain_PitchP());
   printf("Pitch I : %.2f\n\r", getGain_PitchI());
   printf("Pitch D : %.2f\n\r", getGain_PitchD());
@@ -210,4 +207,5 @@ void readGain_All(void)
   printf("Yaw P : %.2f\n\r", getGain_YawP());
   printf("Yaw I : %.2f\n\r", getGain_YawI());
   printf("Yaw D : %.2f\n\r", getGain_YawD());
+*/
 }
