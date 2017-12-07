@@ -30,6 +30,19 @@ void controller()
   float dt = 0.001;
   int i;
 
+/*
+  k_roll[0] = getGain_RollP();
+  k_roll[1] = getGain_RollI();
+  k_roll[2] = getGain_RollD();
+  k_pitch[0] = getGain_PitchP();
+  k_pitch[1] = getGain_PitchI();
+  k_pitch[2] = getGain_PitchD();
+  k_yaw[0] = getGain_YawP();
+  k_yaw[1] = getGain_YawI();
+  k_yaw[2] = getGain_YawD();
+*/
+  
+  //printf("roll : %f %f %f\r\n", k_roll[0], k_roll[1], k_roll[2]);
   /* pid controller */
   for(i = 0; i < 4; i++)
   {

@@ -52,6 +52,8 @@
 #include "sbus.h"
 #include "control.h"
 #include "mixer.h"
+#include "xbee.h"
+#include "flash.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -107,6 +109,7 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   MX_TIM1_Init();
+  MX_UART4_Init();
 
   /* USER CODE BEGIN 2 */
   /* 모든 device 초기화 */
@@ -192,12 +195,14 @@ void SystemClock_Config(void)
 /* 모든 device 초기화 하는 함수 */
 void initialize()
 {
-  init_tim();
   init_uart_dma();
   init_sbus();
   init_mti();
   init_gps();
+  init_flash();
   init_gain();
+  init_tim();
+  
   //init_gy63();
 }
 
@@ -217,9 +222,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* 1000Hz */
   else if(htim->Instance == TIM6)
   {
+    
       read_mti();
       read_sbus();
       read_gps();
+      read_xbee();
       control_cmd();
       if(mti_state.decode_finish_flag)
       {
@@ -227,6 +234,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         controller();
         mixer();
       }
+
   }
 }
 
