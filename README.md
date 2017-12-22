@@ -8,17 +8,17 @@ This repository contains codes and documents written by Club __NoNamed__ in __Da
 ### 프로젝트 목표 : Our goals
 GPS를 이용한 실시간 자가 위치 인식을 기반으로, 목적지까지 자율적으로 비행하는 드론 제작.
 
-Make Autonomous drone that can fly to destinations based on real-time self-location recognition using GPS.
+Making Autonomous drone that can fly to destinations based on real-time self location recognition using GPS.
 
 ### 현재 진행 상황 : Current progress
 오픈 소스 등의 어떠한 도움 없이, NoNamed 팀원들이 작성한 STM32F4 보드 위 펌웨어를 이용하여 안정적인 비행이 가능한 드론을 제작하였습니다.
 
-We made drone from scratch, which can stable flying with firmware on STM32F4 made by NoNamed members without any Open sources.
+We made drone that can fly stable with fimware on STM32F4 coded by NoNamed members from scratch, and without any open sources
 
 ### 향후 진행 방향 : Future Direction
 - 고도 제어를 통한 고도 안정화 : stablizing altitude via altitude contro
 - GPS 기반 자율적 위치 이동 : Self-driving base on GPS
-- 드론 응용 프로젝트 진행 : Conduct project which will application this drone
+- 드론 응용 프로젝트 진행 : Proceed drone applied project
 
 ### 팀원 : Team members
 
