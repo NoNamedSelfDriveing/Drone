@@ -3,12 +3,12 @@
 ### 소개 : Introduction
 __대덕소프트웨어마이스터고등학교__ 전공동아리 __NoNamed__ 에서 진행한 자율 비행 드론 제작 프로젝트 진행 상황을 정리한 저장소입니다. 저희 팀이 2017년 9월 중순부터 시작하여 지금까지 프로젝트를 진행하면서 공부한 내용과 코드들을 모두 정리하고 있습니다.
 
-This repository contains codes and documents written by Club __NoNamed__ in __Daedeok Software Meister High School__ since September 2017. We still have conduct the project, which aimed at making autonomous flying drones.
+This repository contains codes and documents written by Club __NoNamed__ in __Daedeok Software Meister High School__ since September 2017. We still have conducted the project, which aimed at making autonomous flying drones.
 
 ### 프로젝트 목표 : Our goals
 GPS를 이용한 실시간 자가 위치 인식을 기반으로, 목적지까지 자율적으로 비행하는 드론 제작.
 
-Make Autonomous drone that can flight to destinations based on real-time self-location recognition using GPS.
+Make Autonomous drone that can fly to destinations based on real-time self-location recognition using GPS.
 
 ### 현재 진행 상황 : Current progress
 오픈 소스 등의 어떠한 도움 없이, NoNamed 팀원들이 작성한 STM32F4 보드 위 펌웨어를 이용하여 안정적인 비행이 가능한 드론을 제작하였습니다.
