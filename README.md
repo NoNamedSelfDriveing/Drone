@@ -16,8 +16,8 @@ Make Autonomous drone that can fly to destinations based on real-time self-locat
 We made drone from scratch, which can stable flying with firmware on STM32F4 made by NoNamed members without any Open sources.
 
 ### 향후 진행 방향 : Future Direction
-- 고도 제어를 통한 고도 안정화 : Make stable to control altitude
-- GPS 기반 자율적 위치 이동 : Self-driving based on GPS
+- 고도 제어를 통한 고도 안정화 : stablizing altitude via altitude contro
+- GPS 기반 자율적 위치 이동 : Self-driving base on GPS
 - 드론 응용 프로젝트 진행 : Conduct project which will application this drone
 
 ### 팀원 : Team members
