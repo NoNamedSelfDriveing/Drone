@@ -6,7 +6,7 @@
 #include "stm32f4xx_hal.h"
 
 #define XBEE_RX_BUFF_SIZE 1024
-#define XBEE_TX_BUFF_SIZE 2
+#define XBEE_TX_BUFF_SIZE 12
 #define XBEE_PACKET_SIZE 8
 
 typedef union _XBEE_UNION
@@ -43,6 +43,7 @@ extern XbeeUnion        xbee_union;
 
 extern uint8_t          xbee_dma_receive_buff[XBEE_RX_BUFF_SIZE];
 extern uint8_t          xbee_packet_buff[XBEE_PACKET_SIZE];
+extern uint8_t          xbee_check_tx_buff[XBEE_TX_BUFF_SIZE];
 
 void                    receive_xbee();
 void                    read_xbee();
