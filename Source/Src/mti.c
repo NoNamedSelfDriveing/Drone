@@ -110,6 +110,8 @@ void receive_mti_packet()
     
     /* 현재 값을 이전 값으로 세팅 */
     prev_ndt = curr_ndt;
+    
+    
     new_data_start_idx = next_data_start_idx;
 }
 

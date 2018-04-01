@@ -6,6 +6,7 @@ ZIGBEEState zigbee_state;
 uint8_t zigbee_dma_rx_buff[ZIGBEE_DMA_RX_SIZE];
 uint8_t zigbee_packet_buff[ZIGBEE_PACKET_SIZE];
 
+/* Initialize Flags and Variables */
 void init_zigbee()
 {
   zigbee_state.new_packet_flag = 1;
@@ -15,6 +16,8 @@ void init_zigbee()
   zigbee_state.count = 0;
 }
 
+/* Whole Sequence Function for Zigbee
+  Receive Packet, Check Packet, Decode Packet */
 void read_zigbee()
 {
   receive_zigbee_packet();
@@ -28,6 +31,8 @@ void read_zigbee()
   }
 }
   
+/* Receive Zigebee Packet by using DMA
+  Find just one packet and copy to another buffer for decoding*/
 void receive_zigbee_packet()
 {
   static int prev_ndt = ZIGBEE_DMA_RX_SIZE, curr_ndt = 0;
@@ -92,7 +97,7 @@ void receive_zigbee_packet()
   new_data_start_idx = next_data_start_idx;
 }
 
-
+/* Check Received Zigbee Packet */
 void check_zigbee_packet()
 {
   int i;
@@ -114,6 +119,7 @@ void check_zigbee_packet()
   }
 }
 
+/* Decode Received Zigbee Packet */
 void decode_zigbee_packet()
 {
   uint8_t gain_type;
@@ -176,7 +182,7 @@ void decode_zigbee_packet()
       break;
       
     default :
-      printf("Strange gain type was received!\n\r");
+      //printf("Strange gain type was received!\n\r");
   }
   
   zigbee_state.decode_finish_flag = 1;
