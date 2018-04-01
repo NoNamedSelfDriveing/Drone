@@ -13,7 +13,6 @@
 #define PITCH 1
 #define YAW   2
 
-void init_gain();
 void control_cmd();
 void controller();
 void pid();

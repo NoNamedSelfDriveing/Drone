@@ -4,7 +4,9 @@
 #include "stm32f4xx_hal.h"
 
 #define     SIZE(__BUFFER__)    (sizeof(__BUFFER__)/sizeof(*(__BUFFER__)))
+
 #define     MTI_DMA_RX_SIZE     1024
+
 #define     MTI_PACKET_SIZE     99
 
 typedef struct _mti_state

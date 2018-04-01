@@ -54,12 +54,6 @@ void make_next_decodeable_buffer();
 // decode sbus data
 void decode_sbus_data();
 
-// Make PWM value based on decoded SBUS data (Not controlled)
-void make_sbus_pwm_value();
-
-// Generate and output PWM signal based on CONTROLLED sbus data
-void generate_sbus_pwm(TIM_HandleTypeDef*);
-
 // extern variables
 extern SBUS sbus;
 extern uint8_t sbus_dma_receive_buff[SBUS_DMA_RECEIVE_SIZE];
