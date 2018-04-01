@@ -29,7 +29,6 @@ void read_sbus()
   if(sbus.packet_ok_flag)
   {
     decode_sbus_data();
-    make_sbus_pwm_value();
     sbus.count++;
   }
 }
@@ -114,7 +113,6 @@ void make_next_decodeable_buffer()
 
 void decode_sbus_data()
 {
-  int i;
   sbus.packet_ok_flag = 0;
   
   sbus_data_buff[CH1] = (uint16_t)sbus_packet_buff[1] + (uint16_t)((sbus_packet_buff[2]&0x07)<<8);
@@ -133,35 +131,5 @@ void decode_sbus_data()
   sbus_data_buff[CH14] = (uint16_t)((sbus_packet_buff[18]&0x80)>>7) + (uint16_t)(sbus_packet_buff[19]<<1) + (uint16_t)((sbus_packet_buff[20]&0x03)<<9);
   sbus_data_buff[CH15] = (uint16_t)((sbus_packet_buff[20]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[21]&0x1f)<<6);
   sbus_data_buff[CH16] = (uint16_t)((sbus_packet_buff[21]&0xe0)>>5) + (uint16_t)(sbus_packet_buff[22]<<3);
-  
-  /*
-  for(i = 0; i < 16; i++)
-  {
-    printf("%d ", sbus_data_buff[i]);
-  }
-  printf("\r\n");
-  */
-  //printf("%d %d %d %d %d %d %d\r\n", data_buff[0], data_buff[1], data_buff[2], data_buff[3], data_buff[4], data_buff[5], data_buff[6]);
 }
 
-void make_sbus_pwm_value()
-{
-  const float min_duty = 4598.0;
-  const float max_duty = 8126.0;
-  const float max_pwm = 1696.0;
-  const float min_pwm = 352.0;
-  int i;
- 
-  for(i = 0; i < 4; i++){
-      //sbus_pwm_pulse[i] = (uint16_t)( / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
-    //sbus_pwm_pulse[i] = (uint16_t)(data_buff[i] / ((max_pwm - min_pwm) / (max_duty - min_duty)) + 3696);
-    
-  }
-}
-
-void generate_sbus_pwm(TIM_HandleTypeDef * htim){  
-  htim -> Instance -> CCR1 = sbus_pwm_pulse[0];
-  htim -> Instance -> CCR2 = sbus_pwm_pulse[1];
-  htim -> Instance -> CCR3 = sbus_pwm_pulse[2];
-  htim -> Instance -> CCR4 = sbus_pwm_pulse[3];
-}

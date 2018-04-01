@@ -5,6 +5,8 @@ float gain_buff[COUNT_OF_GAIN];
 uint32_t gain_addr[COUNT_OF_GAIN] = {ADDR_ROLL_P, ADDR_ROLL_I, ADDR_ROLL_D, ADDR_PITCH_P, \
                          ADDR_PITCH_I, ADDR_PITCH_D, ADDR_YAW_P, ADDR_YAW_I, ADDR_YAW_D};
 
+/* get last gain values from flash
+   if gain values were not saved, set gain value */
 void init_flash(void)
 {
   float* saved_gain;
@@ -14,6 +16,7 @@ void init_flash(void)
   check = Flash_ReadData(ADDR_CHECK);
   HAL_FLASH_Lock();
   
+  /* if gain values were not saved(flash have not been used) */
   if(check != 1)
   {
     printf("1\n\r");
@@ -34,7 +37,7 @@ void init_flash(void)
     gain_yaw[I] = 0.0f;
     gain_yaw[D] = 4.0f;
       
-    //write initial gain
+    /* write initial gain */
     for(int axis = 0; axis < 3; axis++)
     {
       for(int type = 0; type < 3; type++)
@@ -59,6 +62,7 @@ void init_flash(void)
     HAL_FLASH_Lock();
   }
   
+  /* load last gain values from flash */
   else
   {    
     printf("2\n\r");
@@ -99,18 +103,21 @@ void init_flash(void)
   }
 }
 
+/* Start Reading Gain values from Flash */
 void Flash_StartRead(void)
 {
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
 }
 
+/* Start Writing Gain Values to Flash */
 void Flash_StartWrite(void)
 {
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
 }
 
+/* Read Data from Flash after performing start reading condition */
 uint32_t Flash_ReadData(uint32_t addr)
 {
   uint32_t data;
@@ -120,6 +127,7 @@ uint32_t Flash_ReadData(uint32_t addr)
   return data;
 }
 
+/* Write Data to Flash after performing start writing condition */
 void Flash_WriteData(uint32_t addr, uint32_t data)
 {
   if(HAL_FLASH_Program(TYPEPROGRAM_WORD, addr, data) != HAL_OK)
@@ -128,6 +136,7 @@ void Flash_WriteData(uint32_t addr, uint32_t data)
   }
 }
 
+/* Load Gain Values from Flash */
 float* get_gain()
 {
   static float curr_gain[COUNT_OF_GAIN];
@@ -144,6 +153,7 @@ float* get_gain()
   return curr_gain;
 }
 
+/* Change Gain Values(call save_gain() function)*/
 void change_gain(uint8_t gain_type, float gain_value)
 {
   switch(gain_type)
@@ -176,13 +186,14 @@ void change_gain(uint8_t gain_type, float gain_value)
       gain_yaw[D] = gain_value;
       break;
     default :
-      printf("Wrong gain type!\n\r");
+      //printf("Wrong gain type!\n\r");
       return;
   }
   
   save_gain(gain_type, gain_value);
 }
 
+/* Save New Gain Values on Flash */
 void save_gain(uint8_t gain_type, float gain_value)
 {
   float* prev_gain;
@@ -193,6 +204,7 @@ void save_gain(uint8_t gain_type, float gain_value)
   FLASH_Erase_Sector(FLASH_SECTOR_3, FLASH_VOLTAGE_RANGE_3);
   Flash_WriteData(ADDR_CHECK, (uint32_t)1);
   
+  /* Write All Gain Values Because previous datas in Flash were erased */
   for(int i = 0; i < 9; i++)
   {
     if(i == gain_type)

@@ -46,15 +46,15 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-#include <string.h>
+//#include <string.h>
 #include "mti.h"
 #include "gps.h"
-#include "gy63.h"
 #include "sbus.h"
 #include "control.h"
 #include "mixer.h"
 #include "user_flash.h"
 #include "zigbee.h"
+#include "ms5611.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -114,8 +114,10 @@ int main(void)
   MX_SPI1_Init();
 
   /* USER CODE BEGIN 2 */
-  /* 모든 device 초기화 */
+  
+  /* Intialize All Devices */
   initialize();
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -123,9 +125,6 @@ int main(void)
   
   while (1)
   {
-    //read_gy63_adc(CMD_ADC_4096);
-    //calculate_gy63_altitude();
-    //HAL_Delay(100);
     
   /* USER CODE END WHILE */
 
@@ -192,7 +191,7 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-/* All of things initialize function */
+/*  Initialize All of things  Function */
 /* 모든 device 초기화 하는 함수 */
 void initialize()
 {
@@ -202,28 +201,20 @@ void initialize()
   init_gps();
   init_zigbee();
   init_flash();
-  //init_gain();
+  init_ms5611();
   init_tim();
   
-  //init_gy63();
 }
 
+/* Timer Interrupt ISR */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  /* 1Hz */
-  if(htim->Instance == TIM7)
-  {
-    //printf("%d %d %d %d %d\r\n", HAL_GetTick(), mti_state.count, sbus.count, gps_state.posllh_loop_counter, gps_state.velned_loop_counter);
-    mti_state.count = 0;
-    sbus.count = 0;
-    gps_state.posllh_loop_counter = 0;
-    gps_state.velned_loop_counter = 0;
-  }
   /* 1000Hz */
-  else if(htim->Instance == TIM6)
+  if(htim->Instance == TIM6)
   {
       read_mti();
       read_sbus();
+      read_ms5611();
       read_gps();
       read_zigbee();
       control_cmd();
@@ -233,7 +224,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         controller();
         mixer();
       }
-
   }
 }
 
