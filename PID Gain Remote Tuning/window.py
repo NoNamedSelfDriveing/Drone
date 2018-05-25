@@ -31,15 +31,38 @@ class Window(QtGui.QMainWindow):
     def createInstance(self):
         # Label for show "Tuning Gain Value"
         self.lblTitle = QtGui.QLabel("Tuning Gain Value", self)
-        self.lblTitle.setFont(QtGui.QFont('SansSerif', 30, QtGui.QFont.Bold))
+        self.lblTitle.setFont(QtGui.QFont('SansSerif', 25, QtGui.QFont.Bold))
         self.lblTitle.resize(self.lblTitle.sizeHint())
-        self.lblTitle.move(30, 30)
+        self.lblTitle.move(30, 55)
+
+        # Label for show "Baud Rate"
+        self.lblBaudRate = QtGui.QLabel("Baud Rate", self)
+        self.lblBaudRate.setFont(QtGui.QFont('SansSerif', 16, QtGui.QFont.Bold))
+        self.lblBaudRate.resize(self.lblTitle.sizeHint())
+        self.lblBaudRate.move(360, 32)
+
+        # Label for show "Port"
+        self.lblBaudRate = QtGui.QLabel("Port", self)
+        self.lblBaudRate.setFont(QtGui.QFont('SansSerif', 16, QtGui.QFont.Bold))
+        self.lblBaudRate.resize(self.lblTitle.sizeHint())
+        self.lblBaudRate.move(540, 32)
+
+        # ComboBox for select Baudrate
+        self.cmbBaudrate = QtGui.QComboBox(self)
+        self.cmbBaudrate.setFont(QtGui.QFont('SansSerif', 15))
+        self.cmbBaudrate.resize(120, 50)
+        self.cmbBaudrate.move(350, 70)
+        self.cmbBaudrate.addItem('9600')
+        self.cmbBaudrate.addItem('19200')
+        self.cmbBaudrate.addItem('38400')
+        self.cmbBaudrate.addItem('57600')
+        self.cmbBaudrate.addItem('115200')
 
         # ComboBox for select COM Port
         self.cmbPort = QtGui.QComboBox(self)
         self.cmbPort.setFont(QtGui.QFont('SansSerif', 15))
         self.cmbPort.resize(120, 50)
-        self.cmbPort.move(500, 30)
+        self.cmbPort.move(500, 70)
 
         # Button for Transmit Gain Data
         self.btnSendGain = QtGui.QPushButton('TRANSMIT', self)
@@ -139,12 +162,16 @@ class Window(QtGui.QMainWindow):
         txtGain = [self.txtRollGain, self.txtPitchGain, self.txtYawGain]
         gainType = [0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49]
         gainTypeIndex = 0
+        baudRate = None
 
         # find now selected serial port
         for port in self.enableSerial:
             if port == self.cmbPort.currentText():
                 selectedSerial = port
                 break
+
+        # find now selected baud rate
+        baudRate = int(self.cmbBaudrate.currentText())
 
         print(selectedSerial)
 
@@ -153,7 +180,7 @@ class Window(QtGui.QMainWindow):
             # Iterate Gain Term First
             for gainTermIndex in range(0, 3):
                 if gain[gainTermIndex].text() != '' and gain[gainTermIndex].isEnabled():
-                    USBSerial.transmitPacket(selectedSerial, gainType[gainTypeIndex], float(gain[gainTermIndex].text()))
+                    USBSerial.transmitPacket(selectedSerial, baudRate, gainType[gainTypeIndex], float(gain[gainTermIndex].text()))
                 gainTypeIndex += 1
 
         # Show Message Box for notice transmit complete

@@ -15,7 +15,7 @@ class union(Union):
 
 # find enable COM PORT
 def findEnableCOMPort():
-    for i in range(0, 50):
+    for i in range(0, 100):
         try:
             serObj = serial.Serial(
                 port="COM{num}".format(num = str(i)),\
@@ -54,13 +54,13 @@ def makePacket(gainType, gainValue):
     packet.append(checksum)
 
 # Transmit Packet
-def transmitPacket(portNum, gainType, gainValue):
+def transmitPacket(portNum, baudRate, gainType, gainValue):
     makePacket(gainType, gainValue)
 
     try:
         ser = serial.Serial(
             port=portNum,\
-            baudrate=baud,\
+            baudrate=baudRate,\
             parity=serial.PARITY_NONE,\
             stopbits=serial.STOPBITS_ONE,\
             bytesize=serial.EIGHTBITS,\
