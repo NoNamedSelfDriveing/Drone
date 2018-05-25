@@ -3,8 +3,8 @@
 
 #include "stm32f4xx_hal.h"
 
-#define MS5611_ADDR_W 0xEE
-#define MS5611_ADDR_R 0xEF
+#define MS5611_ADDR_W 0xEC
+#define MS5611_ADDR_R 0xED
 
 #define CMD_RESET     0x1E
 #define CMD_PROM_READ 0xA0
