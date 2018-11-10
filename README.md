@@ -1,7 +1,7 @@
 # Autonomous Drone from Scratch
 
 ### 소개 : Introduction
-__대덕소프트웨어마이스터고등학교__ 전공동아리 __NoNamed__ 에서 진행한 자율 비행 드론 제작 프로젝트 진행 상황을 정리한 저장소입니다. 저희 팀이 2017년 9월 중순부터 시작하여 지금까지 프로젝트를 진행하면서 공부한 내용과 코드들을 모두 정리하고 있습니다.
+__대덕소프트웨어마이스터고등학교__ 전공동아리 __NoNamed__ 에서 진행한 자율 비행 드론 제작 프로젝트 진행 상황을 정리한 Repository입니다. 저희 팀이 2017년 9월 중순부터 시작하여 지금까지 프로젝트를 진행하면서 공부한 내용과 프로젝트에 사용한 코드들을 모두 정리하고 있습니다.
 
 This repository contains codes and documents written by Club __NoNamed__ in __Daedeok Software Meister High School__ since September 2017. We still have conducted the project, which aimed at making autonomous flying drones.
 
@@ -11,13 +11,13 @@ GPS를 이용한 실시간 자가 위치 인식을 기반으로, 목적지까지
 Making Autonomous drone that can fly to destinations based on real-time self location recognition using GPS.
 
 ### 현재 진행 상황 : Current progress
-오픈 소스 등의 어떠한 도움 없이, NoNamed 팀원들이 작성한 STM32F4 보드 위 펌웨어를 이용하여 안정적인 비행이 가능한 드론을 제작하였습니다.
+오픈 소스 등의 어떠한 도움 없이, STM32F4 MCU를 사용하여 NoNamed 팀원들이 직접 개발한 펌웨어를 통해 안정적인 비행이 가능한 드론을 제작하였습니다. 
 
 We made drone that can fly stable with fimware on STM32F4 coded by NoNamed members from scratch, and without any open sources
 
 ### 향후 진행 방향 : Future Direction
-- 고도 제어를 통한 고도 안정화 : stablizing altitude via altitude contro
-- GPS 기반 자율적 위치 이동 : Self-driving base on GPS
+- 고도 제어를 통한 고도 안정화 : stablizing altitude via altitude control
+- GPS 기반 자율적 위치 이동 : Self-driving based on GPS
 - 드론 응용 프로젝트 진행 : Proceed drone applied project
 
 ### 팀원 : Team members
@@ -31,7 +31,7 @@ __팀원__
 ### 관련 자료 : Related Contents
 
 - 12월 발표회 전시 포스터 : Poster made at December 2017
-    <img src="Drone Poster_2268x3401.png" width="500"/>
+    <img src="https://github.com/SongKJ00/Drone/blob/master/Drone%20Poster.png" width="500"/>
     
 - 12월 발표회 영상 : Our presentation at December 2017
 
