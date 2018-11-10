@@ -15,7 +15,8 @@
 
 #define SBUS_PACKET_SIZE      25
 #define SBUS_DMA_RECEIVE_SIZE 1024
-#define START_BYTE            0x0F
+#define START_BYTE_1            0x0F
+#define START_BYTE_2            0x8F
 #define END_BYTE              0x04
 
 #define CH1  0
@@ -40,6 +41,9 @@ typedef struct _SBUS
   uint8_t     new_packet_flag;
   uint8_t     packet_ok_flag;
   uint16_t    count;
+  uint16_t    throttle;
+  int16_t     throttle_change;
+  float       cmd[3];
 }SBUS;
 
 // Initialize SBUS struct
@@ -48,8 +52,8 @@ void init_sbus();
 // READ FUNCTION
 void read_sbus();
 
-// make next decodeable buffer in DMA receive buffer
-void make_next_decodeable_buffer();
+// receive sbus packet
+void receive_sbus_packet();
   
 // decode sbus data
 void decode_sbus_data();
@@ -59,6 +63,7 @@ extern SBUS sbus;
 extern uint8_t sbus_dma_receive_buff[SBUS_DMA_RECEIVE_SIZE];
 extern uint8_t sbus_packet_buff[SBUS_PACKET_SIZE];
 extern uint16_t sbus_data_buff[18];
+
 // Buffer of PWM value should be controlled
 extern uint16_t sbus_pwm_pulse[6];
 #endif

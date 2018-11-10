@@ -2,10 +2,6 @@
 #define _GPS_H
 
 #include "stm32f4xx_hal.h"
-#include "usart.h"
-#include "gpio.h"
-#include "math.h"
-#include "string.h"
 
 #define GPS_DMA_RECEIVE_SIZE 1024
 #define GPS_PACKET_SIZE 80
