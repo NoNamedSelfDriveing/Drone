@@ -1,4 +1,8 @@
 #include "zigbee.h"
+#include "usart.h"
+#include "user_flash.h"
+#include <stdlib.h>
+#include <string.h>
 
 ZIGBEEData zigbee_data;
 ZIGBEEState zigbee_state;
@@ -132,58 +136,83 @@ void decode_zigbee_packet()
   zigbee_data.buff[2] = zigbee_packet_buff[5];
   zigbee_data.buff[3] = zigbee_packet_buff[6];
   
-  printf("gain : %.3f\n\r", zigbee_data.value);
+  printf("changed gain type : ");
   
   switch(gain_type)
   {
     /* Roll P Gain */
-    case 0x41 : 
+    case 0x41 :
+      printf("Roll P\n\r");
       change_gain(ROLL_P, zigbee_data.value);
       break;
       
     /* Roll I Gain */
     case 0x42 :
+      printf("Roll I\n\r");
       change_gain(ROLL_I, zigbee_data.value);
       break;
       
     /* Roll D Gain */
     case 0x43 : 
+      printf("Roll D\n\r");
       change_gain(ROLL_D, zigbee_data.value);
       break;
       
     /* Pitch P Gain */
     case 0x44 : 
+      printf("Pitch P\n\r");
       change_gain(PITCH_P, zigbee_data.value);
       break;
     
     /* Pitch I Gain */
     case 0x45 : 
+      printf("Pitch I\n\r");
       change_gain(PITCH_I, zigbee_data.value);
       break;
       
     /* Pitch D Gain */
     case 0x46 : 
+      printf("Pitch D\n\r");
       change_gain(PITCH_D, zigbee_data.value);
       break;
       
     /* Yaw P Gain */
     case 0x47 : 
+      printf("Yaw P\n\r");
       change_gain(YAW_P, zigbee_data.value);
       break;
       
     /* Yaw I Gain */
     case 0x48 : 
+      printf("Yaw I\n\r");
       change_gain(YAW_I, zigbee_data.value);
       break;
       
     /* Yaw D Gain */
     case 0x49 : 
+      printf("Yaw D\n\r");
       change_gain(YAW_D, zigbee_data.value);
       break;
       
-    default :
-      //printf("Strange gain type was received!\n\r");
+    /* Altitude P Gain */
+    case 0x77 :
+      printf("Alt P\n\r");
+      change_gain(ALT_P, zigbee_data.value);
+      break;
+    
+    /* Altitude I Gain */
+    case 0x78 :
+      printf("Alt I\n\r");
+      change_gain(ALT_I, zigbee_data.value);
+      break;
+      
+    /* Altitude D Gain */
+    case 0x79 :
+      printf("Alt D\n\r");
+      change_gain(ALT_D, zigbee_data.value);
+      break;
   }
   
+  printf("changed value : %.3f\n\r\n\r", zigbee_data.value);
   zigbee_state.decode_finish_flag = 1;
 }

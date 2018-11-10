@@ -2,9 +2,6 @@
 #define ZIGBEE_H
 
 #include "stm32f4xx_hal.h"
-#include <stdlib.h>
-#include "usart.h"
-#include "user_flash.h"
 
 #define ZIGBEE_DMA_RX_SIZE 1024
 #define ZIGBEE_PACKET_SIZE 9

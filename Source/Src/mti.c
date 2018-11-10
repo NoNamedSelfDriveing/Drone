@@ -48,7 +48,7 @@ void receive_mti_packet()
     
     /* 현재 ndt 구하기 */
     curr_ndt = __HAL_DMA_GET_COUNTER(&hdma_usart3_rx);
-
+    
     /* 이전 ndt와 현재 ndt의 차이에 따른 처리 */
     if(prev_ndt > curr_ndt)
     {
@@ -110,7 +110,6 @@ void receive_mti_packet()
     
     /* 현재 값을 이전 값으로 세팅 */
     prev_ndt = curr_ndt;
-    
     
     new_data_start_idx = next_data_start_idx;
 }
@@ -229,20 +228,20 @@ void decode_mti_packet()
   mti_data.buff[74] = mti_packet_buff[95];
   mti_data.buff[75] = mti_packet_buff[94];
   
-  mti.euler[0] = -mti_data.value[0];
-  mti.euler[1] = mti_data.value[1];
+  mti.euler[0] = mti_data.value[0];
+  mti.euler[1] = -mti_data.value[1];
   mti.euler[2] = -mti_data.value[2];
   
   mti.acc[0] = mti_data.value[3];
-  mti.acc[1] = mti_data.value[4];
-  mti.acc[2] = mti_data.value[5];
+  mti.acc[1] = -mti_data.value[4];
+  mti.acc[2] = -mti_data.value[5];
   
   mti.delta_v[0] = mti_data.value[6];
   mti.delta_v[1] = mti_data.value[7];
   mti.delta_v[2] = mti_data.value[8];
    
-  mti.pqr[0] = -mti_data.value[9]*180/PI;
-  mti.pqr[1] = mti_data.value[10]*180/PI;
+  mti.pqr[0] = mti_data.value[9]*180/PI;
+  mti.pqr[1] = -mti_data.value[10]*180/PI;
   mti.pqr[2] = -mti_data.value[11]*180/PI;
   
   mti.delta_q[0] = mti_data.value[12];
@@ -255,13 +254,4 @@ void decode_mti_packet()
   mti.mag[2] = mti_data.value[18];
   
   mti_state.decode_finish_flag = 1;
-  mti_state.count++;
-  
-  //printf("%4f %4f %4f\r\n", mti.euler[0], mti.euler[1], mti.euler[2]);
-  //printf("%4f %4f %4f\r\n", mti.acc[0], mti.acc[1], mti.acc[2]);
-  //printf("%4f %4f %4f\r\n", mti.delta_v[0], mti.delta_v[1], mti.delta_v[2]);
-  //printf("%4f %4f %4f\r\n", mti.pqr[0], mti.pqr[1], mti.pqr[2]);
-  //printf("%4f %4f %4f %4f\r\n", mti.delta_q[0], mti.delta_q[1], mti.delta_q[2], mti.delta_q[3]);
-  //printf("%4f %4f %4f\r\n", mti.mag[0], mti.mag[1], mti.mag[2]);
-  //printf("\r\n");
 }

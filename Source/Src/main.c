@@ -46,7 +46,6 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-//#include <string.h>
 #include "mti.h"
 #include "gps.h"
 #include "sbus.h"
@@ -55,13 +54,16 @@
 #include "user_flash.h"
 #include "zigbee.h"
 #include "ms5611.h"
+#include "kalman_filter.h"
+#include "lpf.h"
+#include "coordinate_transform.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-    
+uint8_t cnt;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -114,7 +116,6 @@ int main(void)
   MX_SPI1_Init();
 
   /* USER CODE BEGIN 2 */
-  
   /* Intialize All Devices */
   initialize();
   
@@ -191,8 +192,7 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-/*  Initialize All of things  Function */
-/* 모든 device 초기화 하는 함수 */
+/*  Initialize all thing */
 void initialize()
 {
   init_uart_dma();
@@ -202,8 +202,10 @@ void initialize()
   init_zigbee();
   init_flash();
   init_ms5611();
-  init_tim();
+  init_lpf(&alt_lpf, 0.85f);
+  init_alt_kf();
   
+  init_tim();
 }
 
 /* Timer Interrupt ISR */
@@ -212,20 +214,49 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* 1000Hz */
   if(htim->Instance == TIM6)
   {
-      read_mti();
-      read_sbus();
-      read_ms5611();
-      read_gps();
-      read_zigbee();
-      control_cmd();
+    read_mti();
+    read_sbus();
+    //read_gps();
+    read_ms5611();
+    if(ms5611_state.new_hgt_flag)
+    {
+      ms5611.hgt = do_lpf(&alt_lpf, ms5611.hgt);
+      //printf("%f\n\r", ms5611.hgt);
+    }
+    //read_zigbee();
+    make_attitude_control_cmd();
+    /* if mti sensor is decoded, then make pid output for attitude */
+    if(ms5611_state.cali_flag)
+    {
       if(mti_state.decode_finish_flag)
       {
         mti_state.decode_finish_flag = 0;
-        controller();
-        mixer();
+        
+        calc_dcm_body_to_ned(mti.euler[ROLL], mti.euler[PITCH], mti.euler[YAW]);
+        transform_data_body_to_ned(mti.acc[0], mti.acc[1], mti.acc[2]);
+        
+        alt_kf_predict_2(get_ned_free_acc_z());
+        alt_kf_update_2(ms5611.hgt);
+        
+        //printf("%f\n\r", ms5611.hgt);
+        printf("%f\n\r", alt_kf.x[0][0]);
+        attitude_controller();
+        attitude_mixer();
       }
+    }
+    /* if ms5611 sensor adc is completed, then make pid output for altitude and do mixer */
   }
 }
+  
+  
+  
+//  else if(htim->Instance == TIM7)
+//  {
+//    printf("%d\n\r", sbus.count);
+//    sbus.count = 0;
+//  }
+  
+
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf

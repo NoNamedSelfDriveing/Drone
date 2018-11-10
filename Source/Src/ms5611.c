@@ -1,15 +1,17 @@
 #include "ms5611.h"
+#include "lpf.h"
 #include "i2c.h"
 #include <math.h>
-#include "gps.h"
 
 MS5611State ms5611_state;
-LPF LPF_barometer;
+MS5611 ms5611;
 uint8_t send_cmd;
 uint8_t rx_buff[1024];
 uint16_t c[8];
 uint32_t digital_temp, digital_press;
-int32_t p;
+LPF alt_lpf;
+
+float p;
 
 /* initialze */
 void init_ms5611()
@@ -19,12 +21,13 @@ void init_ms5611()
   ms5611_state.adc_time_cnt = 0;
   ms5611_state.adc_type = 0;
   
-  LPF_barometer.fc = 5;
-  LPF_barometer.dt = 0.02f;
-  LPF_barometer.lambda = 2 * PI * LPF_barometer.fc * LPF_barometer.dt;
-  LPF_barometer.x = 0.0f;
-  LPF_barometer.filtered_x = 0.0f;
-  LPF_barometer.prev_filtered_x = 0.0f;
+  ms5611_state.cali_flag = 0;
+  ms5611_state.new_hgt_flag = 0;
+  ms5611_state.alt_rx_cnt = 0;
+  
+  ms5611.start_alt = 0.0f;
+  
+  //init_lpf(&alt_lpf, 5.0f, 0.02f);
   
   reset_ms5611();
   read_ms5611_prom();
@@ -33,22 +36,43 @@ void init_ms5611()
 /* whole ms5611 sequence function*/
 void read_ms5611()
 {
+  ms5611_state.new_hgt_flag = 0;
   /* if converting is started, count time till 10ms(wait for converting)*/
   if(ms5611_state.adc_start_flag)
   {
     ms5611_state.adc_time_cnt++;
   }
   /* if converting is completed(use 10ms), read adc value */
-  if(ms5611_state.adc_time_cnt >= 10)
+  if(ms5611_state.adc_time_cnt >= ADC_DELAY_TIME)
   {
     read_ms5611_adc(ms5611_state.adc_type);
     ms5611_state.adc_start_flag = 0;
     ms5611_state.adc_time_cnt = 0;
+    
     /* if temp, pressure were received, start calculating */
     if(ms5611_state.adc_type != 0)
     {
-      calculate_pressure();
-      low_pass_filter();
+      calc_press();
+      calc_alt();
+      
+      // Get average altitude(n = 100)
+      if(!ms5611_state.cali_flag)
+      {
+        ms5611.start_alt += ms5611.now_alt;
+        ms5611_state.alt_rx_cnt++;
+        if(ms5611_state.alt_rx_cnt >= COUNT_OF_AVG_DATA)
+        {
+          ms5611.start_alt /= (float)COUNT_OF_AVG_DATA;
+          ms5611_state.cali_flag = 1;
+        }
+      }
+      
+      if(ms5611_state.cali_flag)
+      {
+        ms5611.hgt = ms5611.now_alt - ms5611.start_alt;
+        ms5611_state.new_hgt_flag = 1;
+      }
+      ms5611_state.adc_finish_flag = 1;
     }
     ms5611_state.adc_type = !(ms5611_state.adc_type);
   }
@@ -71,14 +95,13 @@ void reset_ms5611()
 /* read coefficient value from prom */
 void read_ms5611_prom()
 {
-  int i = 0;
+  int i;
   for(i = 1; i <= 6; i++)
   {
     send_cmd = CMD_PROM_READ | (i << 1);
     HAL_I2C_Master_Transmit(&hi2c1, MS5611_ADDR_W, &(send_cmd), 1, 100);
     HAL_I2C_Master_Receive(&hi2c1, MS5611_ADDR_R, rx_buff, 2, 100);
     c[i] = (rx_buff[0] << 8) | (rx_buff[1]);
-    printf("%d\n\r", c[i]);
   }
 }
 
@@ -121,45 +144,46 @@ void read_ms5611_adc(uint8_t type)
 }
 
 /* calculate pressure by using coefficients, several values */
-void calculate_pressure()
+void calc_press()
 {
+  
   int32_t dt, temp;
   int64_t off, sens;
   
   int32_t temp2 = 0;
   int64_t off2 = 0, sens2 = 0;
   
-  dt = digital_temp - c[5] * pow(2, 8);
-  temp = 2000 + dt * c[6] / pow(2, 23);
+  dt = digital_temp - (uint32_t)c[5] * 256;
+  temp = 2000 + ((int64_t)dt * c[6]) / 8388608;
   
-  off = c[2] * pow(2, 16) + (c[4] * dt) / pow(2, 7);
-  sens = c[1] * pow(2, 15) + (c[3] * dt) / pow(2, 8);
+  off = (int64_t)c[2] * 65536 + (int64_t)c[4] * dt / 128;
+  sens = (int64_t)c[1] * 32768 + (int64_t)c[3] * dt / 256;
   
-  if((temp / 100) < 20)
+  if(temp < 2000)
   {
-    temp2 = pow(dt, 2) / pow(2, 31);    
-    off2 = 5 * pow((temp - 2000), 2) / pow(2, 1);
-    sens2 = 5 * pow((temp - 2000), 2) / pow(2, 2);
+    temp2 = (dt * dt) / (2 << 30);
+    off2 = 5 * ((temp - 2000) * (temp - 2000)) / 2;
+    sens2 = 5 * ((temp - 2000) * (temp - 2000)) / 4;
+    
+    temp = temp - temp2;
+    off = off - off2;
+    sens = sens - sens2;
   }
   
-  temp = temp - temp2;
-  off = off - off2;
-  sens = sens - sens2;
+  else if(temp < -1500)
+  {
+    off2 = off2 + 7 * ((temp + 1500) * (temp + 1500));
+    sens2 = sens2 + 11 * ((temp + 1500) * (temp + 1500)) / 2;
+    
+    off = off - off2;
+    sens = sens - sens2;
+  }
   
-  p = (digital_press * sens / pow(2, 21) - off) / pow(2, 15);
+  ms5611.temp = temp * 0.01f;
+  ms5611.p = ((digital_press * sens / 2097152 - off) / 32768) * 0.01f;
 }
 
-/* barometer low pass filter function */
-void low_pass_filter()
+void calc_alt()
 {
-  float altitude;
-  
-  LPF_barometer.x = p;
-  LPF_barometer.filtered_x = ((LPF_barometer.lambda / (1 + LPF_barometer.lambda)) * LPF_barometer.x) \
-                              + ((1 / (1 + LPF_barometer.lambda)) * LPF_barometer.prev_filtered_x);
-  LPF_barometer.prev_filtered_x = LPF_barometer.filtered_x;
-  
-  altitude = 44330.0 * (1 - pow(((LPF_barometer.filtered_x/100.0) / 1026.6), (1/5.255)));
-  //printf("%f\n\r", altitude);  
+  ms5611.now_alt = 44330.0f * (1.0f - pow((ms5611.p/1023.9f), 0.1902949f));
 }
-

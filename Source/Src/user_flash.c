@@ -1,16 +1,19 @@
 #include "user_flash.h"
+#include "stm32f4xx_hal_flash.h"
+#include "control.h"
 
-GainData gain;
-float gain_buff[COUNT_OF_GAIN];
+Gain gain;
+float now_gain[COUNT_OF_GAIN];
 uint32_t gain_addr[COUNT_OF_GAIN] = {ADDR_ROLL_P, ADDR_ROLL_I, ADDR_ROLL_D, ADDR_PITCH_P, \
-                         ADDR_PITCH_I, ADDR_PITCH_D, ADDR_YAW_P, ADDR_YAW_I, ADDR_YAW_D};
+                         ADDR_PITCH_I, ADDR_PITCH_D, ADDR_YAW_P, ADDR_YAW_I, ADDR_YAW_D, \
+                         ADDR_ALT_P, ADDR_ALT_I, ADDR_ALT_D};
 
 /* get last gain values from flash
    if gain values were not saved, set gain value */
 void init_flash(void)
 {
-  float* saved_gain;
   uint32_t check = 100; 
+  int axis, type;
   
   Flash_StartRead();
   check = Flash_ReadData(ADDR_CHECK);
@@ -19,43 +22,52 @@ void init_flash(void)
   /* if gain values were not saved(flash have not been used) */
   if(check != 1)
   {
-    printf("1\n\r");
+    printf("Flash has not been ever used\n\r");
     Flash_StartWrite();
     
     FLASH_Erase_Sector(FLASH_SECTOR_3, VOLTAGE_RANGE_3);
     Flash_WriteData(ADDR_CHECK, (uint32_t)1);
        
-    gain_roll[P] = 6.0f;
-    gain_roll[I] = 0.0f;
-    gain_roll[D] = 1.5f;
+    atti_pid.gain_roll[P] = 6.0f;
+    atti_pid.gain_roll[I] = 0.0f;
+    atti_pid.gain_roll[D] = 1.5f;
     
-    gain_pitch[P] = 6.0f;
-    gain_pitch[I] = 0.0f;
-    gain_pitch[D] = 1.5f;
+    atti_pid.gain_pitch[P] = 6.0f;
+    atti_pid.gain_pitch[I] = 0.0f;
+    atti_pid.gain_pitch[D] = 1.5f;
     
-    gain_yaw[P] = 2.0f;
-    gain_yaw[I] = 0.0f;
-    gain_yaw[D] = 4.0f;
+    atti_pid.gain_yaw[P] = 2.0f;
+    atti_pid.gain_yaw[I] = 0.0f;
+    atti_pid.gain_yaw[D] = 4.0f;
       
+    alt_pid.gain[P] = 30.0f;
+    alt_pid.gain[I] = 15.0f;
+    alt_pid.gain[D] = 0.4f;
+    
     /* write initial gain */
-    for(int axis = 0; axis < 3; axis++)
+    for(axis = 0; axis <= 3; axis++)
     {
-      for(int type = 0; type < 3; type++)
+      for(type = 0; type <= 2; type++)
       {
         if(axis == ROLL)
         {
-          gain.float_value = gain_roll[type];
+          gain.float_value = atti_pid.gain_roll[type];
           Flash_WriteData(gain_addr[type], gain.int_value);
         }
         else if(axis == PITCH)
         {
-          gain.float_value = gain_pitch[type];
+          gain.float_value = atti_pid.gain_pitch[type];
           Flash_WriteData(gain_addr[type+3], gain.int_value);
         }
         else if(axis == YAW)
         {
-          gain.float_value = gain_yaw[type];
+          gain.float_value = atti_pid.gain_yaw[type];
           Flash_WriteData(gain_addr[type+6], gain.int_value);
+        }
+        else if(axis == ALT)
+        {
+          gain.float_value = alt_pid.gain[type];
+          Flash_WriteData(gain_addr[type+9], gain.int_value);
         }
       }
     }
@@ -65,39 +77,61 @@ void init_flash(void)
   /* load last gain values from flash */
   else
   {    
-    printf("2\n\r");
+    printf("Flash was used\n\r");
     
-    saved_gain = get_gain();
+    //saved_gain = get_gain();
+    get_now_gain();
     
-    gain_roll[P] = saved_gain[ROLL_P];
-    gain_roll[I] = saved_gain[ROLL_I];
-    gain_roll[D] = saved_gain[ROLL_D];
+    /*
+    atti_pid.gain_roll[P] = saved_gain[ROLL_P];
+    atti_pid.gain_roll[I] = saved_gain[ROLL_I];
+    atti_pid.gain_roll[D] = saved_gain[ROLL_D];
     
-    gain_pitch[P] = saved_gain[PITCH_P];
-    gain_pitch[I] = saved_gain[PITCH_I];
-    gain_pitch[D] = saved_gain[PITCH_D];
+    atti_pid.gain_pitch[P] = saved_gain[PITCH_P];
+    atti_pid.gain_pitch[I] = saved_gain[PITCH_I];
+    atti_pid.gain_pitch[D] = saved_gain[PITCH_D];
     
-    gain_yaw[P] = saved_gain[YAW_P];
-    gain_yaw[I] = saved_gain[YAW_I];
-    gain_yaw[D] = saved_gain[YAW_D];
+    atti_pid.gain_yaw[P] = saved_gain[YAW_P];
+    atti_pid.gain_yaw[I] = saved_gain[YAW_I];
+    atti_pid.gain_yaw[D] = saved_gain[YAW_D];
+    */
+    atti_pid.gain_roll[P] = now_gain[ROLL_P];
+    atti_pid.gain_roll[I] = now_gain[ROLL_I];
+    atti_pid.gain_roll[D] = now_gain[ROLL_D];
+    
+    atti_pid.gain_pitch[P] = now_gain[PITCH_P];
+    atti_pid.gain_pitch[I] = now_gain[PITCH_I];
+    atti_pid.gain_pitch[D] = now_gain[PITCH_D];
+    
+    atti_pid.gain_yaw[P] = now_gain[YAW_P];
+    atti_pid.gain_yaw[I] = now_gain[YAW_I];
+    atti_pid.gain_yaw[D] = now_gain[YAW_D];
+    
+    alt_pid.gain[P] = now_gain[ALT_P];
+    alt_pid.gain[I] = now_gain[ALT_I];
+    alt_pid.gain[D] = now_gain[ALT_D];
   }
   
   printf("initial gain data\n\r");
-  for(int axis = 0; axis < 3; axis++)
+  for(axis = 0; axis <= 3; axis++)
   {
-    for(int type = 0; type < 3; type++)
+    for(type = 0; type <= 2; type++)
     {
       if(axis == ROLL)
       {
-        printf("%.4f\n\r", gain_roll[type]);
+        printf("%.4f\n\r", atti_pid.gain_roll[type]);
       }
       else if(axis == PITCH)
       {
-        printf("%.4f\n\r", gain_pitch[type]);
+        printf("%.4f\n\r", atti_pid.gain_pitch[type]);
       }
       else if(axis == YAW)
       {
-        printf("%.4f\n\r", gain_yaw[type]);
+        printf("%.4f\n\r", atti_pid.gain_yaw[type]);
+      }
+      else if(axis == ALT)
+      {
+        printf("%.4f\n\r", alt_pid.gain[type]);
       }
     }
   }
@@ -137,20 +171,17 @@ void Flash_WriteData(uint32_t addr, uint32_t data)
 }
 
 /* Load Gain Values from Flash */
-float* get_gain()
+void get_now_gain()
 {
-  static float curr_gain[COUNT_OF_GAIN];
+  int idx;
   
   Flash_StartRead();
-  for(int i = 0; i < 9; i++)
+  for(idx = 0; idx < COUNT_OF_GAIN; idx++)
   {
-    gain.int_value = Flash_ReadData(gain_addr[i]);
-    curr_gain[i] = gain.float_value;
-    //printf("curr_gain[i] : %.4f\n\r", gain.float_value);
+    gain.int_value = Flash_ReadData(gain_addr[idx]);
+    now_gain[idx] = gain.float_value;
   }
   HAL_FLASH_Lock();
-  
-  return curr_gain;
 }
 
 /* Change Gain Values(call save_gain() function)*/
@@ -159,35 +190,41 @@ void change_gain(uint8_t gain_type, float gain_value)
   switch(gain_type)
   {
     case ROLL_P :
-      gain_roll[P] = gain_value;
+      atti_pid.gain_roll[P] = gain_value;
       break;
     case ROLL_I :
-      gain_roll[I] = gain_value;
+      atti_pid.gain_roll[I] = gain_value;
       break;
     case ROLL_D :
-      gain_roll[D] = gain_value;
+      atti_pid.gain_roll[D] = gain_value;
       break;
     case PITCH_P :
-      gain_pitch[P] = gain_value;
+      atti_pid.gain_pitch[P] = gain_value;
       break;
     case PITCH_I :
-      gain_pitch[I] = gain_value;
+      atti_pid.gain_pitch[I] = gain_value;
       break;
     case PITCH_D :
-      gain_pitch[D] = gain_value;
+      atti_pid.gain_pitch[D] = gain_value;
       break;
     case YAW_P :
-      gain_yaw[P] = gain_value;
+      atti_pid.gain_yaw[P] = gain_value;
       break;
     case YAW_I :
-      gain_yaw[I] = gain_value;
+      atti_pid.gain_yaw[I] = gain_value;
       break;
     case YAW_D :
-      gain_yaw[D] = gain_value;
+      atti_pid.gain_yaw[D] = gain_value;
       break;
-    default :
-      //printf("Wrong gain type!\n\r");
-      return;
+    case ALT_P :
+      alt_pid.gain[P] = gain_value;
+      break;
+    case ALT_I :
+      alt_pid.gain[I] = gain_value;
+      break;
+    case ALT_D :
+      alt_pid.gain[D] = gain_value;
+      break;
   }
   
   save_gain(gain_type, gain_value);
@@ -196,28 +233,26 @@ void change_gain(uint8_t gain_type, float gain_value)
 /* Save New Gain Values on Flash */
 void save_gain(uint8_t gain_type, float gain_value)
 {
-  float* prev_gain;
+  int idx;
   
-  prev_gain = get_gain();
+  get_now_gain();
   
   Flash_StartWrite();
   FLASH_Erase_Sector(FLASH_SECTOR_3, FLASH_VOLTAGE_RANGE_3);
   Flash_WriteData(ADDR_CHECK, (uint32_t)1);
   
   /* Write All Gain Values Because previous datas in Flash were erased */
-  for(int i = 0; i < 9; i++)
+  for(idx = 0; idx < COUNT_OF_GAIN; idx++)
   {
-    if(i == gain_type)
+    if(idx == gain_type)
     {
       gain.float_value = gain_value;
       Flash_WriteData(gain_addr[gain_type], gain.int_value);
-      //printf("%.4f\n\r", gain.float_value);
     }
     else
     {
-      gain.float_value = prev_gain[i];
-      Flash_WriteData(gain_addr[i], gain.int_value);
-      //printf("%.4f\n\r", prev_gain[i]);
+      gain.float_value = now_gain[idx];
+      Flash_WriteData(gain_addr[idx], gain.int_value);
     }
   }
   HAL_FLASH_Lock();

@@ -1,4 +1,8 @@
 #include "gps.h"
+#include "usart.h"
+#include "gpio.h"
+#include <math.h>
+#include <string.h>
 
 GpsCommon       gps_state;
 GpsPosllh       posllh_data;
