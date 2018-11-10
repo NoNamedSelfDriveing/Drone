@@ -4,23 +4,23 @@
 #define dt 0.01f
 
 typedef struct _ALT_KF{
-  float x[2][1];
+  float x[2];
   float p[2][2];
   
-  float u[1][1];
-  float z[1][1];
+  float u;
+  float z;
   
   float A[2][2];
   float B[2][1];
   
-  float H[1][2];
-  float K[2][1];
+  float H[2];
+  float K[2];
   
   float Q[2][2];
-  float R[1][1];
+  float R;
   
   float At[2][2];
-  float Ht[2][1];
+  float Ht[2];
 }ALT_KF;
 
 typedef struct _ALT_KF_TEMP{
@@ -46,9 +46,7 @@ typedef struct _ALT_KF_TEMP{
 
 void init_alt_kf();
 void alt_kf_predict(float acc_z);
-void alt_kf_update(float alt);
-void alt_kf_predict_2(float acc_z);
-void alt_kf_update_2(float hgt);
+void alt_kf_update(float hgt);
 
 extern ALT_KF alt_kf;
 extern ALT_KF_TEMP alt_kf_temp;
