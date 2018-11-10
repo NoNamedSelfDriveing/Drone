@@ -31,7 +31,7 @@ __팀원__
 ### 관련 자료 : Related Contents
 
 - 12월 발표회 전시 포스터 : Poster made at December 2017
-    <img src="https://github.com/SongKJ00/Drone/blob/master/Drone%20Poster.png" width="500"/>
+    <img src="https://github.com/NoNamedSelfDriveing/Drone/blob/master/Drone%20Poster.png" width="500"/>
     
 - 12월 발표회 영상 : Our presentation at December 2017
 
