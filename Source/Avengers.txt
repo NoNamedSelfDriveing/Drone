@@ -1,6 +1,6 @@
 Configuration	Avengers
 STM32CubeMX 	4.22.1
-Date	02/08/2018
+Date	07/02/2018
 MCU	STM32F407VETx
 
 
@@ -66,7 +66,7 @@ SOFTWARE PROJECT
 
 Project Settings : 
 Project Name : Avengers
-Project Folder : D:\Avengers
+Project Folder : D:\Drone\Source
 Toolchain / IDE : EWARM
 Firmware Package Name and Version : STM32Cube FW_F4 V1.16.0
 
