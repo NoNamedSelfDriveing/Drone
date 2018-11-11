@@ -54,8 +54,8 @@ void init_alt_kf()
   alt_kf.H[1] = 0.0f;
   
   /* init Transpose H */
-  alt_kf.Ht[0] = 1.0f;
-  alt_kf.Ht[1] = 0.0f;
+  alt_kf.Ht[0] = 0.0f;
+  alt_kf.Ht[1] = 1.0f;
 }
 
 /* Predict state variables */

@@ -166,7 +166,7 @@ int16_t motor_output[4];
 //}
 
 /* Control motor outputs along motors' position */
-void attitude_mixer()
+void atti_mixer()
 {
   static uint16_t prev_arm_data = 352, curr_arm_data = 352;
   static uint8_t arming_flag = 0;

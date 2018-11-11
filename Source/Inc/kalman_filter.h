@@ -3,12 +3,14 @@
 
 #define dt 0.01f
 
+#define HEIGHT   0
+#define VELOCITY 1
 typedef struct _ALT_KF{
-  float x[2];
-  float p[2][2];
-  
   float u;
   float z;
+  
+  float x[2];
+  float p[2][2];
   
   float A[2][2];
   float B[2][1];

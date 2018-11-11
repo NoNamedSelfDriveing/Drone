@@ -40,10 +40,11 @@ typedef struct _SBUS
 { 
   uint8_t     new_packet_flag;
   uint8_t     packet_ok_flag;
+  uint8_t     decode_finish_flag;
   uint16_t    count;
   uint16_t    throttle;
   int16_t     throttle_change;
-  float       cmd[3];
+  float       cmd[4];
 }SBUS;
 
 // Initialize SBUS struct

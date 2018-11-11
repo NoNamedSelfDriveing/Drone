@@ -26,6 +26,7 @@ void init_mti()
 /* 모든 mti 과정 실행하는 함수 */
 void read_mti()
 {
+  mti_state.decode_finish_flag = 0;
   receive_mti_packet();
   if(mti_state.packet_rx_flag)
   {

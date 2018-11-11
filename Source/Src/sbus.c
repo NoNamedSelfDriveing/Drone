@@ -27,6 +27,7 @@ void init_sbus()
 {
   sbus.new_packet_flag = 1;
   sbus.packet_ok_flag = 0;
+  sbus.decode_finish_flag = 0;
   sbus.count = 0;
   sbus.throttle = 0;
   sbus.throttle_change = 0;
@@ -34,11 +35,11 @@ void init_sbus()
 
 void read_sbus()
 {
+  sbus.decode_finish_flag = 0;
   receive_sbus_packet();
   if(sbus.packet_ok_flag)
   {
     decode_sbus_data();
-    sbus.count++;
   }
 }
 
@@ -135,12 +136,9 @@ void decode_sbus_data()
   sbus_data_buff[CH15] = (uint16_t)((sbus_packet_buff[20]&0xfc)>>2) + (uint16_t)((sbus_packet_buff[21]&0x1f)<<6);
   sbus_data_buff[CH16] = (uint16_t)((sbus_packet_buff[21]&0xe0)>>5) + (uint16_t)(sbus_packet_buff[22]<<3);
   
-  prev_throttle = now_throttle;
-  now_throttle = sbus_data_buff[CH3];
-  
   sbus.throttle = sbus_data_buff[CH3];
-  sbus.throttle_change = now_throttle - prev_throttle;
   
+  sbus.decode_finish_flag = 1;
   //sbus.count++;
   //printf("%d\n\r", sbus.throttle);
 }
