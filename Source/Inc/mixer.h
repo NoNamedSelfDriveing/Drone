@@ -17,7 +17,7 @@
 #define    GAIN              ((MAX_PULSE - MIN_PULSE) / (MAX_PID_OUTPUT - MIN_PID_OUTPUT))
 #define    OFFSET            3696
 
-void attitude_mixer();
+void atti_mixer();
 void altitude_mixer();
 
 #endif

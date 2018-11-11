@@ -195,16 +195,22 @@ void SystemClock_Config(void)
 /*  Initialize all thing */
 void initialize()
 {
-  init_uart_dma();
+  init_alt_pid_gain();
+  
+  /* init module */
   init_sbus();
   init_mti();
   init_gps();
   init_zigbee();
   init_flash();
   init_ms5611();
+  
+  /* init filter */
   init_lpf(&alt_lpf, 0.85f);
   init_alt_kf();
-  
+
+  /* init peripheral */
+  init_uart_dma();
   init_tim();
 }
 
@@ -218,45 +224,40 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     read_sbus();
     //read_gps();
     read_ms5611();
+    
+    /* check if new sbus data was received */
+    if(sbus.decode_finish_flag)
+    {
+      make_atti_control_cmd();          // make attitude control command
+      make_alt_control_cmd();           // make altitude control command
+    }
+    
+    /* check if new height(altitude) data was received */
     if(ms5611_state.new_hgt_flag)
     {
-      ms5611.hgt = do_lpf(&alt_lpf, ms5611.hgt);
-      //printf("%f\n\r", ms5611.hgt);
+      ms5611.hgt = do_lpf(&alt_lpf, ms5611.hgt);        // then, do low pass filter
     }
-    //read_zigbee();
-    make_attitude_control_cmd();
-    /* if mti sensor is decoded, then make pid output for attitude */
+    
+    /* check if initial height data was received */
     if(ms5611_state.cali_flag)
     {
+      /* check if new sensor data was received */
       if(mti_state.decode_finish_flag)
       {
-        mti_state.decode_finish_flag = 0;
+        calc_dcm_body_to_ned(mti.euler[ROLL], mti.euler[PITCH], mti.euler[YAW]);        // calculate dcm body to ned matrix
+        transform_data_body_to_ned(mti.acc[0], mti.acc[1], mti.acc[2]);                 // transform vertical acceleration of body frame to NED frame        
         
-        calc_dcm_body_to_ned(mti.euler[ROLL], mti.euler[PITCH], mti.euler[YAW]);
-        transform_data_body_to_ned(mti.acc[0], mti.acc[1], mti.acc[2]);
+        alt_kf_predict(get_ned_free_acc_z());   // do kalman filter prediction
+        alt_kf_update(ms5611.hgt);              // do kalman filter update
         
-        alt_kf_predict_2(get_ned_free_acc_z());
-        alt_kf_update_2(ms5611.hgt);
+        atti_controller();                      // do attitude PID controller
+        alt_controller();                       // do altitude PID controller
         
-        //printf("%f\n\r", ms5611.hgt);
-        printf("%f\n\r", alt_kf.x[0][0]);
-        attitude_controller();
-        attitude_mixer();
+        atti_mixer();                           // do motor output        
       }
     }
-    /* if ms5611 sensor adc is completed, then make pid output for altitude and do mixer */
   }
 }
-  
-  
-  
-//  else if(htim->Instance == TIM7)
-//  {
-//    printf("%d\n\r", sbus.count);
-//    sbus.count = 0;
-//  }
-  
-
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf

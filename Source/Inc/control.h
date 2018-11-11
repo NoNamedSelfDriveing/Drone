@@ -13,6 +13,7 @@
 #define ROLL  0
 #define PITCH 1
 #define YAW   2
+#define ALT   3
 
 typedef struct _attitude_pid
 {
@@ -38,10 +39,11 @@ typedef struct _altitude_pid
   float term[3];
 }ALTITUDE_PID;
 
-void init_altitude_pid_gain();
-void make_attitude_control_cmd();
-void attitude_controller();
-void altitude_controller();
+void init_alt_pid_gain();
+void make_atti_control_cmd();
+void make_alt_control_cmd();
+void atti_controller();
+void alt_controller();
 
 extern ATTITUDE_PID atti_pid;
 extern ALTITUDE_PID alt_pid;
